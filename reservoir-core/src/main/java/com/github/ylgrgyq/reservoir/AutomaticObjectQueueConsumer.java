@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
@@ -28,12 +29,17 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
     private static final Logger logger = LoggerFactory.getLogger(AutomaticObjectQueueConsumer.class);
     private static final ThreadFactory threadFactory = new NamedThreadFactory("automatic-object-queue-consumer-");
 
+    private static final int UNINTERRUPTABLE = 0;
+    private static final int INTERRUPTABLE = 1;
+    private static final int SHUTDOWN = 2;
+
     private final ObjectQueueConsumer<E> delegateConsumer;
     private final Thread worker;
     @Nullable
     private final Executor listenerExecutor;
     private final Set<ConsumeObjectListener<E>> listeners;
     private volatile boolean closed;
+    private final AtomicInteger workerState;
 
     /**
      * The strategy to use when handling a consumed object failed.
@@ -82,12 +88,14 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
     public interface ConsumeObjectListener<E extends Verifiable> {
         /**
          * Called when the consumed object is invalid. The object will be committed and dropped automatically.
+         *
          * @param obj the consumed object
          */
         void onInvalidObject(E obj);
 
         /**
          * Called when handle the consumed object success.
+         *
          * @param obj the consumed object
          */
         void onHandleSuccess(E obj);
@@ -95,13 +103,14 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
         /**
          * Called when handle the consumed object failed.
          *
-         * @param obj the consumed object
+         * @param obj       the consumed object
          * @param throwable the exception thrown on handle the consumed object
          */
         void onHandleFailed(E obj, Throwable throwable);
 
         /**
          * Called when an exception was thrown when calling some listener.
+         *
          * @param throwable the exception thrown
          */
         void onListenerNotificationFailed(Throwable throwable);
@@ -157,6 +166,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
             throw new IllegalArgumentException("listenerExecutor is null but listeners is not empty");
         }
 
+        this.workerState = new AtomicInteger(UNINTERRUPTABLE);
         this.delegateConsumer = consumer;
         this.worker = threadFactory.newThread(new Worker(handler));
         this.listenerExecutor = listenerExecutor;
@@ -200,9 +210,16 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
         closed = true;
 
         if (worker != Thread.currentThread()) {
+            while (workerState.compareAndSet(INTERRUPTABLE, SHUTDOWN)) {
+                Thread.sleep(100);
+            }
+
             worker.interrupt();
             worker.join();
+        }  else {
+            workerState.set(SHUTDOWN);
         }
+
         delegateConsumer.close();
     }
 
@@ -221,24 +238,17 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
         public void run() {
             final ConsumeObjectHandler<E> handler = this.handler;
             final ObjectQueueConsumer<E> consumer = AutomaticObjectQueueConsumer.this.delegateConsumer;
-            while (!closed) {
+            while (true) {
                 try {
                     boolean commit = false;
                     try {
-                        final E obj = consumer.fetch();
+                        final E obj = fetchObject(consumer);
 
                         if (!obj.isValid()) {
                             notifyInvalidObject(obj);
                             commit = true;
                         } else {
-                            try {
-                                handler.onHandleObject(obj);
-                                notifyOnHandleSuccess(obj);
-                                commit = true;
-                            } catch (Exception ex) {
-                                notifyOnHandleFailed(obj, ex);
-                                commit = handleObjectFailed(handler, obj, ex);
-                            }
+                            commit = processFetchedObject(handler, obj);
                         }
                     } finally {
                         if (commit) {
@@ -246,11 +256,47 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
                         }
                     }
                 } catch (InterruptedException ex) {
-                    // do nothing
+                    if (closed) {
+                        break;
+                    }
                 } catch (Exception ex) {
                     logger.warn("Got unexpected exception on processing object in reservoir queue.", ex);
                 }
             }
+        }
+    }
+
+    private E fetchObject(ObjectQueueConsumer<E> consumer) throws InterruptedException, StorageException {
+        final boolean consumerMayClosed;
+        final E obj;
+        if (workerState.compareAndSet(UNINTERRUPTABLE, INTERRUPTABLE)) {
+            try {
+                obj = consumer.fetch();
+                // If workerState set to Shutdown at here, the newly fetched obj may lost if
+                // the underlying consumer set auto commit to true.
+            } finally {
+                consumerMayClosed = !workerState.compareAndSet(INTERRUPTABLE, UNINTERRUPTABLE);
+            }
+        } else {
+            obj = null;
+            consumerMayClosed = true;
+        }
+
+        if (consumerMayClosed) {
+            throw new InterruptedException();
+        }
+
+        return obj;
+    }
+
+    private boolean processFetchedObject(ConsumeObjectHandler<E> handler, E obj) throws Exception {
+        try {
+            handler.onHandleObject(obj);
+            notifyOnHandleSuccess(obj);
+            return true;
+        } catch (Exception ex) {
+            notifyOnHandleFailed(obj, ex);
+            return handleObjectFailed(handler, obj, ex);
         }
     }
 
