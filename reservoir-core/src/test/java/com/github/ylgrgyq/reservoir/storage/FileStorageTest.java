@@ -121,10 +121,24 @@ public class FileStorageTest {
     }
 
     @Test
+    public void testWorkingWithCleanDirectory() throws Exception {
+        FileStorage storage = builder.build();
+        final int expectSize = 64;
+
+        final List<SerializedObjectWithId<byte[]>> objs = generateSimpleTestingObjectWithIds(expectSize);
+        storeObjectWithIds(storage, objs);
+        storage.close();
+
+        storage = builder.startWithCleanDirectory(true).build();
+        assertThat(storage.getLastProducedId()).isEqualTo(-1);
+        storage.close();
+    }
+
+    @Test
     public void fetchDataFromImmutableMemtable() throws Exception {
         final FileStorage storage = builder
                 // block flush memtable job, so immutable memtable will stay in mem during the test
-                .setFlushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
+                .flushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
                 .build();
 
         final List<SerializedObjectWithId<byte[]>> objs = generateSimpleTestingObjectWithIds(64);
@@ -139,7 +153,7 @@ public class FileStorageTest {
     public void fetchDataOnlyFromImmutableMemtableAndMemtable() throws Exception {
         final FileStorage storage = builder
                 // block flush memtable job, so immutable memtable will stay in mem during the test
-                .setFlushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
+                .flushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
                 .build();
 
         final List<SerializedObjectWithId<byte[]>> objs = generateSimpleTestingObjectWithIds(64);
@@ -155,7 +169,7 @@ public class FileStorageTest {
     public void fetchDataFromRecoveredSstable() throws Exception {
         FileStorage storage = builder
                 // block flush memtable job, so immutable memtable will stay in mem during the test
-                .setFlushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
+                .flushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
                 .build();
 
         final List<SerializedObjectWithId<byte[]>> objs = generateSimpleTestingObjectWithIds(64);
@@ -165,7 +179,7 @@ public class FileStorageTest {
         storage = builder
                 // create executor service again, because the previous executor service in the storage
                 // builder is closed when the previous storage closed
-                .setFlushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
+                .flushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS))
                 .build();
         assertThat(storage.fetch(-1, 64)).isEqualTo(objs);
         storage.close(true);
@@ -175,7 +189,7 @@ public class FileStorageTest {
     public void fetchDataFromSstableImmutableMemtableAndMemtable() throws Exception {
         final FileStorage storage = builder
                 // allow only one flush task finish immediately
-                .setFlushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, 1, TimeUnit.DAYS))
+                .flushMemtableExecutorService(new DelayedSingleThreadExecutorService(1, 1, TimeUnit.DAYS))
                 .build();
 
         // 1. write some data
@@ -200,7 +214,7 @@ public class FileStorageTest {
     @Test
     public void fetchDataFromMultiSstables() throws Exception {
         final FileStorage storage = builder
-                .setFlushMemtableExecutorService(new ImmediateExecutorService())
+                .flushMemtableExecutorService(new ImmediateExecutorService())
                 .build();
 
         final List<SerializedObjectWithId<byte[]>> expectData = new ArrayList<>();
@@ -219,7 +233,7 @@ public class FileStorageTest {
     public void testWriteImmutableTableBlock() throws Exception {
         final DelayedSingleThreadExecutorService executorService = new DelayedSingleThreadExecutorService(1, TimeUnit.DAYS);
         final FileStorage storage = builder
-                .setFlushMemtableExecutorService(executorService)
+                .flushMemtableExecutorService(executorService)
                 .build();
 
         // 1. trigger immutable table flush
@@ -257,7 +271,7 @@ public class FileStorageTest {
     @SuppressWarnings("ConstantConditions")
     public void testFlushMemtableFailedThenStorageClosed() throws Exception {
         final FileStorage storage = builder
-                .setFlushMemtableExecutorService(new ImmediateExecutorService())
+                .flushMemtableExecutorService(new ImmediateExecutorService())
                 .build();
 
         storage.writeMemtable(null);
@@ -267,8 +281,8 @@ public class FileStorageTest {
     @Test
     public void truncate() throws Exception {
         final FileStorage storage = builder
-                .setFlushMemtableExecutorService(new ImmediateExecutorService())
-                .setTruncateIntervalMillis(0, TimeUnit.MILLISECONDS)
+                .flushMemtableExecutorService(new ImmediateExecutorService())
+                .truncateIntervalMillis(0, TimeUnit.MILLISECONDS)
                 .build();
         final int expectSize = 65;
         final List<SerializedObjectWithId<byte[]>> objs = generateSimpleTestingObjectWithIds(expectSize);

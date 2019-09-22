@@ -30,6 +30,7 @@ public class FileStorageBuilder {
         return new FileStorageBuilder(storageBaseDir);
     }
 
+    private boolean startWithCleanDirectory = false;
     private boolean forceSyncOnFlushConsumerCommitLogWriter = false;
     private boolean forceSyncOnFlushDataLogWriter = false;
     private long truncateIntervalMillis = TimeUnit.MINUTES.toMillis(1);
@@ -51,7 +52,7 @@ public class FileStorageBuilder {
      *                         {@code truncateInterval} parameter
      * @return this
      */
-    public FileStorageBuilder setTruncateIntervalMillis(long truncateInterval, TimeUnit unit) {
+    public FileStorageBuilder truncateIntervalMillis(long truncateInterval, TimeUnit unit) {
         if (truncateInterval < 0) {
             throw new IllegalArgumentException("truncateInterval: " + truncateInterval + " (expect: >= 0)");
         }
@@ -70,7 +71,7 @@ public class FileStorageBuilder {
      * @param flushMemtableExecutorService a {@link ExecutorService} instance
      * @return this
      */
-    public FileStorageBuilder setFlushMemtableExecutorService(ExecutorService flushMemtableExecutorService) {
+    public FileStorageBuilder flushMemtableExecutorService(ExecutorService flushMemtableExecutorService) {
         requireNonNull(flushMemtableExecutorService, "flushMemtableExecutorService");
 
         this.flushMemtableExecutorService = flushMemtableExecutorService;
@@ -86,8 +87,9 @@ public class FileStorageBuilder {
      *
      * @param syncFlushConsumerCommitLogWriter true to force flush updated commit id to internal file
      */
-    public void setSyncFlushConsumerCommitLogWriter(boolean syncFlushConsumerCommitLogWriter) {
+    public FileStorageBuilder syncFlushConsumerCommitLogWriter(boolean syncFlushConsumerCommitLogWriter) {
         this.forceSyncOnFlushConsumerCommitLogWriter = syncFlushConsumerCommitLogWriter;
+        return this;
     }
 
     /**
@@ -99,8 +101,28 @@ public class FileStorageBuilder {
      *
      * @param syncFlushDataLogWriter true to force flush stored data to internal file
      */
-    public void setSyncFlushDataLogWriter(boolean syncFlushDataLogWriter) {
+    public FileStorageBuilder syncFlushDataLogWriter(boolean syncFlushDataLogWriter) {
         this.forceSyncOnFlushDataLogWriter = syncFlushDataLogWriter;
+        return this;
+    }
+
+    /**
+     * If set, when {@link FileStorage} is created, it will scan every existing files in it's working directory,
+     * delete any files which name matches the name pattern used in {@link FileStorage}. In this way, it
+     * will delete all the files saved by previous {@link FileStorage}s using the same working directory and
+     * working with a clean directory. Thus the newly created {@link FileStorage} can not recover any data
+     * saved before.
+     * <p>
+     * The default value is false.
+     *
+     * @param startWithCleanDirectory true to delete all the files saved by previous {@link FileStorage}s
+     *                                using the same working directory
+     * @return this
+     */
+    public FileStorageBuilder startWithCleanDirectory(boolean startWithCleanDirectory) {
+
+        this.startWithCleanDirectory = startWithCleanDirectory;
+        return this;
     }
 
     /**
@@ -115,6 +137,10 @@ public class FileStorageBuilder {
                     new NamedThreadFactory("memtable-writer-"));
         }
         return new FileStorage(this);
+    }
+
+    boolean startWithCleanDirectory() {
+        return startWithCleanDirectory;
     }
 
     String getStorageBaseDir() {
@@ -133,11 +159,11 @@ public class FileStorageBuilder {
         return flushMemtableExecutorService;
     }
 
-    boolean isForceSyncOnFlushConsumerCommitLogWriter() {
+    boolean forceSyncOnFlushConsumerCommitLogWriter() {
         return forceSyncOnFlushConsumerCommitLogWriter;
     }
 
-    boolean isForceSyncOnFlushDataLogWriter() {
+    boolean forceSyncOnFlushDataLogWriter() {
         return forceSyncOnFlushDataLogWriter;
     }
 }

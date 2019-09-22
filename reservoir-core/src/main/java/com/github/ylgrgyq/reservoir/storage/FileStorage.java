@@ -1,6 +1,7 @@
 package com.github.ylgrgyq.reservoir.storage;
 
 import com.github.ylgrgyq.reservoir.*;
+import com.github.ylgrgyq.reservoir.storage.FileName.FileNameMeta;
 import com.github.ylgrgyq.reservoir.storage.FileName.FileType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -106,8 +108,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
         this.tableCache = new TableCache(baseDir);
         this.manifest = new Manifest(baseDir);
         this.truncateIntervalNanos = TimeUnit.MILLISECONDS.toNanos(builder.getTruncateIntervalMillis());
-        this.forceSyncOnFlushConsumerCommitLogWriter = builder.isForceSyncOnFlushConsumerCommitLogWriter();
-        this.forceSyncOnFlushDataLogWriter = builder.isForceSyncOnFlushDataLogWriter();
+        this.forceSyncOnFlushConsumerCommitLogWriter = builder.forceSyncOnFlushConsumerCommitLogWriter();
+        this.forceSyncOnFlushDataLogWriter = builder.forceSyncOnFlushDataLogWriter();
         this.closeFuture = null;
         this.lock = new ReentrantLock();
         this.storageNotEmpty = lock.newCondition();
@@ -120,6 +122,10 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
             this.storageLock = lockStorage(storageBaseDir);
 
             logger.debug("Start init storage under {}", storageBaseDir);
+
+            if (builder.startWithCleanDirectory()) {
+                cleanWorkingDirectory(storageBaseDir);
+            }
 
             final ManifestRecord record = ManifestRecord.newPlainRecord();
             final Path currentFilePath = Paths.get(storageBaseDir, FileName.getCurrentFileName());
@@ -844,21 +850,52 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
         }
     }
 
-    private void deleteOutdatedFiles(String baseDir, int dataLogFileNumber,
-                                     int consumerCommittedIdLogFileNumber, TableCache tableCache) {
-        final List<Path> outdatedFilePaths = getOutdatedFiles(baseDir, dataLogFileNumber,
-                consumerCommittedIdLogFileNumber, tableCache);
-        try {
-            for (Path path : outdatedFilePaths) {
-                Files.deleteIfExists(path);
+    private static void deleteOutdatedFiles(String baseDir,
+                                            int dataLogFileNumber,
+                                            int consumerCommittedIdLogFileNumber,
+                                            TableCache tableCache) {
+        final List<Path> outdatedFilePaths = scanFiles(baseDir, meta -> {
+            switch (meta.getType()) {
+                case ConsumerCommit:
+                    return meta.getFileNumber() < consumerCommittedIdLogFileNumber;
+                case Log:
+                    return meta.getFileNumber() < dataLogFileNumber;
+                case SSTable:
+                    return !tableCache.hasTable(meta.getFileNumber());
+                case Current:
+                case Lock:
+                case TempManifest:
+                case Manifest:
+                case Unknown:
+                default:
+                    return false;
             }
-        } catch (IOException t) {
-            logger.error("delete outdated files:{} failed", outdatedFilePaths, t);
-        }
+        });
+
+        deleteFiles(outdatedFilePaths);
     }
 
-    private static List<Path> getOutdatedFiles(String baseDir, int dataLogFileNumber,
-                                               int consumerCommittedIdLogFileNumber, TableCache tableCache) {
+    private static void cleanWorkingDirectory(String baseDir) {
+        final List<Path> filesToDelete = scanFiles(baseDir, meta -> {
+            switch (meta.getType()) {
+                case ConsumerCommit:
+                case Log:
+                case SSTable:
+                case Current:
+                case Lock:
+                case TempManifest:
+                case Manifest:
+                    return true;
+                case Unknown:
+                default:
+                    return false;
+            }
+        });
+
+        deleteFiles(filesToDelete);
+    }
+
+    private static List<Path> scanFiles(String baseDir, Predicate<? super FileNameMeta> filter) {
         final File dirFile = new File(baseDir);
         final File[] files = dirFile.listFiles();
 
@@ -867,27 +904,21 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                     .filter(File::isFile)
                     .map(File::getName)
                     .map(FileName::parseFileName)
-                    .filter(meta -> {
-                        switch (meta.getType()) {
-                            case ConsumerCommit:
-                                return meta.getFileNumber() < consumerCommittedIdLogFileNumber;
-                            case Log:
-                                return meta.getFileNumber() < dataLogFileNumber;
-                            case SSTable:
-                                return !tableCache.hasTable(meta.getFileNumber());
-                            case Current:
-                            case Lock:
-                            case TempManifest:
-                            case Manifest:
-                            case Unknown:
-                            default:
-                                return false;
-                        }
-                    })
+                    .filter(filter)
                     .map(meta -> Paths.get(baseDir, meta.getFileName()))
                     .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
+        }
+    }
+
+    private static void deleteFiles(List<Path> filesToDelete) {
+        try {
+            for (Path path : filesToDelete) {
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException t) {
+            logger.error("delete files:{} failed", filesToDelete, t);
         }
     }
 }
