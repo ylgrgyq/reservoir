@@ -272,7 +272,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
         if (workerState.compareAndSet(UNINTERRUPTABLE, INTERRUPTABLE)) {
             try {
                 obj = consumer.fetch();
-                // If workerState set to Shutdown at here, the newly fetched obj may lost if
+                // If workerState set to SHUTDOWN state at here, the newly fetched obj may lost if
                 // the underlying consumer set auto commit to true.
             } finally {
                 consumerMayClosed = !workerState.compareAndSet(INTERRUPTABLE, UNINTERRUPTABLE);

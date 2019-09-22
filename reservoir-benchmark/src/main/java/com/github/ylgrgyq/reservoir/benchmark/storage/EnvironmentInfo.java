@@ -5,6 +5,8 @@ import java.lang.management.ManagementFactory;
 import java.util.List;
 
 final class EnvironmentInfo {
+    private EnvironmentInfo() {}
+
     static String generateEnvironmentSpec() {
         return "OS: " + System.getProperty("os.name") + "\n" +
                 "JDK: " + System.getProperty("java.version") + "\n" +
