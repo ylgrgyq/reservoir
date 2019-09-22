@@ -38,8 +38,8 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
     @Nullable
     private final Executor listenerExecutor;
     private final Set<ConsumeObjectListener<E>> listeners;
-    private volatile boolean closed;
     private final AtomicInteger workerState;
+    private volatile boolean closed;
 
     /**
      * The strategy to use when handling a consumed object failed.

@@ -7,8 +7,6 @@ import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.internal.configuration.injection.MockInjection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +16,6 @@ import java.util.concurrent.Executors;
 
 import static com.github.ylgrgyq.reservoir.TestingUtils.numberStringBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.filter;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
