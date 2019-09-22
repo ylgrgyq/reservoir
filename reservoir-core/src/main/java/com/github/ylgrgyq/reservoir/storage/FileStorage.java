@@ -459,16 +459,17 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
 
     private FileLock lockStorage(String baseDir) throws IOException {
         final Path lockFilePath = Paths.get(baseDir, FileName.getLockFileName());
-        final FileLock lock;
-
-        try (final FileChannel lockChannel = FileChannel.open(
-                lockFilePath,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE)) {
+        final FileChannel lockChannel = FileChannel.open(lockFilePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        FileLock lock = null;
+        try {
             lock = lockChannel.tryLock();
             if (lock == null) {
                 throw new IllegalStateException("failed to lock directory: " + baseDir);
             }
+        } finally {
+          if (lock == null || !lock.isValid()) {
+              lockChannel.close();
+          }
         }
 
         return lock;
@@ -699,6 +700,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                 }
             }
         } catch (InterruptedException t) {
+            // Restore interrupted state and throw StorageException
+            Thread.currentThread().interrupt();
             throw new StorageException("thread was interrupted when waiting room for new entry");
         }
     }
@@ -851,7 +854,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
             assert safeCloseThread != null;
             safeCloseThread.join();
         } catch (InterruptedException ex) {
-            // ignore
+            // ignore InterruptedException and restore interrupted state...
+            Thread.currentThread().interrupt();
         }
     }
 
