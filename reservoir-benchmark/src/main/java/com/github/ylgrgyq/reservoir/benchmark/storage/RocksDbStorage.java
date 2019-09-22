@@ -208,8 +208,7 @@ public final class RocksDbStorage implements ObjectQueueStorage<byte[]> {
     public void store(List<byte[]> queue) {
         requireNonNull(queue, "queue");
 
-        try {
-            final WriteBatch batch = new WriteBatch();
+        try (final WriteBatch batch = new WriteBatch()){
             long id = getLastProducedId();
             for (byte[] e : queue) {
                 batch.put(columnFamilyHandle, getKeyBytes(++id), e);
@@ -330,7 +329,7 @@ public final class RocksDbStorage implements ObjectQueueStorage<byte[]> {
 
         @Override
         public void run() {
-            while (!closed) {
+            while (true) {
                 try {
                     long lastCommittedId = getLastCommittedId();
                     long truncateId = Math.max(0, lastCommittedId - 1000);
@@ -342,7 +341,9 @@ public final class RocksDbStorage implements ObjectQueueStorage<byte[]> {
 
                     Thread.sleep(detectTruncateIntervalMillis);
                 } catch (InterruptedException ex) {
-                    // continue
+                    if (closed){
+                        break;
+                    }
                 } catch (Exception ex) {
                     logger.error("Truncate handler failed for entry", ex);
                     break;

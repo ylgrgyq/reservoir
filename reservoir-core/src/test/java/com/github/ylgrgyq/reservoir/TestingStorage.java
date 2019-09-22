@@ -103,8 +103,9 @@ public class TestingStorage<S> extends AbstractTestingStorage<S>{
     }
 
     @Override
-    public void close() throws Exception {
+    public synchronized void close() throws Exception {
         closed = true;
+        notify();
     }
 
     boolean closed() {

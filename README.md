@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/ylgrgyq/reservoir.svg?branch=master)](https://travis-ci.com/ylgrgyq/reservoir)
 [![Clojars Project](https://img.shields.io/clojars/v/com.github.ylgrgyq/reservoir.svg)](https://clojars.org/com.github.ylgrgyq/reservoir)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=com.github.ylgrgyq%3Areservoir&metric=coverage)](https://sonarcloud.io/dashboard?id=com.github.ylgrgyq%3Areservoir)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Reservoir is a collection of queue-related classes which is used to store/retrieve elements to/from external storage  like file, redis etc. Currently, we only provided the local file based storage, but leave convient interfaces to adapt to other kind of storages.

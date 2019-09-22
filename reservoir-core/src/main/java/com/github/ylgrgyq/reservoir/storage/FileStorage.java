@@ -59,7 +59,12 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
 
         @Override
         public SerializedObjectWithId<byte[]> next() {
-            assert lastItrIndex >= 0 && lastItrIndex < iterators.size();
+            assert lastItrIndex >= 0;
+
+            if (lastItrIndex >= iterators.size()) {
+                throw new NoSuchElementException();
+            }
+
             return iterators.get(lastItrIndex).next();
         }
     }
@@ -455,18 +460,19 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     private FileLock lockStorage(String baseDir) throws IOException {
         final Path lockFilePath = Paths.get(baseDir, FileName.getLockFileName());
         final FileChannel lockChannel = FileChannel.open(lockFilePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        final FileLock lock;
+        FileLock fileLock = null;
         try {
-            lock = lockChannel.tryLock();
-            if (lock == null) {
+            fileLock = lockChannel.tryLock();
+            if (fileLock == null) {
                 throw new IllegalStateException("failed to lock directory: " + baseDir);
             }
-        } catch (IOException ex) {
-            lockChannel.close();
-            throw ex;
+        } finally {
+          if (fileLock == null || !fileLock.isValid()) {
+              lockChannel.close();
+          }
         }
 
-        return lock;
+        return fileLock;
     }
 
     private void releaseStorageLock() throws IOException {
@@ -694,6 +700,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                 }
             }
         } catch (InterruptedException t) {
+            // Restore interrupted state and throw StorageException
+            Thread.currentThread().interrupt();
             throw new StorageException("thread was interrupted when waiting room for new entry");
         }
     }
@@ -846,7 +854,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
             assert safeCloseThread != null;
             safeCloseThread.join();
         } catch (InterruptedException ex) {
-            // ignore
+            // ignore InterruptedException and restore interrupted state...
+            Thread.currentThread().interrupt();
         }
     }
 

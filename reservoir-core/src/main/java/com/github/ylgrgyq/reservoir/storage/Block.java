@@ -5,6 +5,7 @@ import com.github.ylgrgyq.reservoir.SerializedObjectWithId;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 final class Block implements Iterable<SerializedObjectWithId<byte[]>> {
     private final ByteBuffer content;
@@ -110,7 +111,9 @@ final class Block implements Iterable<SerializedObjectWithId<byte[]>> {
 
         @Override
         public SerializedObjectWithId<byte[]> next() {
-            assert offset < content.limit();
+            if (offset >= content.limit()) {
+                throw new NoSuchElementException();
+            }
 
             content.position(offset);
             final long k = content.getLong();

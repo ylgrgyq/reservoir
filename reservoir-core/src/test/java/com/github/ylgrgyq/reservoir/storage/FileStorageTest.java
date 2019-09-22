@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static com.github.ylgrgyq.reservoir.TestingUtils.numberStringBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 public class FileStorageTest {
@@ -31,6 +33,14 @@ public class FileStorageTest {
         tempFile = new File(tempDir);
         FileUtils.forceMkdir(tempFile);
         builder = FileStorageBuilder.newBuilder(tempFile.getPath());
+    }
+
+    @Test
+    public void twoFileStorageUsingSameWorkingDirectory() throws Exception {
+        final FileStorage storageA = builder.build();
+
+        assertThatThrownBy(() -> builder.build()).isInstanceOf(StorageException.class);
+        storageA.close();
     }
 
     @Test

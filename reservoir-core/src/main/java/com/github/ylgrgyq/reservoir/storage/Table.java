@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
 
 final class Table implements Iterable<SerializedObjectWithId<byte[]>> {
@@ -99,8 +100,10 @@ final class Table implements Iterable<SerializedObjectWithId<byte[]>> {
 
         @Override
         public SerializedObjectWithId<byte[]> next() {
-            assert innerBlockIter != null;
-            assert innerBlockIter.hasNext();
+            if (innerBlockIter == null || !innerBlockIter.hasNext()) {
+                throw new NoSuchElementException();
+            }
+
             return innerBlockIter.next();
         }
 

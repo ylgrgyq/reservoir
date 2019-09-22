@@ -3,10 +3,7 @@ package com.github.ylgrgyq.reservoir.storage;
 import com.github.ylgrgyq.reservoir.SerializedObjectWithId;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -99,7 +96,10 @@ final class Memtable implements Iterable<SerializedObjectWithId<byte[]>> {
 
         @Override
         public SerializedObjectWithId<byte[]> next() {
-            assert offset != null;
+            if (offset == null) {
+                throw new NoSuchElementException();
+            }
+
             long id = offset.getKey();
             byte[] v = offset.getValue();
             offset = innerMap.higherEntry(id);
