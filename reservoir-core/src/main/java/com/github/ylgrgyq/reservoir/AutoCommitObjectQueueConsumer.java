@@ -70,25 +70,20 @@ final class AutoCommitObjectQueueConsumer<E, S> implements ObjectQueueConsumer<E
     public void close() throws Exception {
         closed = true;
 
-        lock.lock();
-        try {
-            storage.close();
-        } finally {
-            lock.unlock();
-        }
+        storage.close();
     }
 
     private boolean blockFetchFromStorage(long timeout, TimeUnit unit) throws InterruptedException, StorageException {
+        if (closed) {
+            throw new InterruptedException("consumer closed");
+        }
+
+        if (!queue.isEmpty()) {
+            return true;
+        }
+
         lock.lock();
         try {
-            if (closed) {
-                throw new InterruptedException("consumer closed");
-            }
-
-            if (!queue.isEmpty()) {
-                return true;
-            }
-
             long lastId = lastCommittedId;
             final List<? extends SerializedObjectWithId<S>> payloads;
             if (timeout == 0) {
@@ -103,7 +98,7 @@ final class AutoCommitObjectQueueConsumer<E, S> implements ObjectQueueConsumer<E
                     try {
                         final E pObj = deserializer.deserialize(serializeP);
                         queue.put(pObj);
-                    } catch (InterruptedException ex){
+                    } catch (InterruptedException ex) {
                         throw ex;
                     } catch (Exception ex) {
                         String msg = "deserialize object with id: " + p.getId() + " failed. Content is: " +

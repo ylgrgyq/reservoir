@@ -7,6 +7,8 @@ import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.internal.configuration.injection.MockInjection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,7 +18,10 @@ import java.util.concurrent.Executors;
 
 import static com.github.ylgrgyq.reservoir.TestingUtils.numberStringBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.filter;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class AutomaticObjectQueueConsumerTest {
     private final Condition<Throwable> runtimeException = new Condition<>(e -> e instanceof RuntimeException, "RuntimeException");
@@ -158,6 +163,27 @@ public class AutomaticObjectQueueConsumerTest {
         consumer.close();
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testListenerOnSuccessObjectsThrowsException() throws Exception {
+        final RuntimeException expectException = new RuntimeException();
+        generateTestingPayload(1, true);
+        final ConsumeObjectListener<TestingPayload> listener = (ConsumeObjectListener<TestingPayload>) (mock(ConsumeObjectListener.class));
+        doThrow(expectException).
+                when(listener)
+                .onHandleSuccess(any(TestingPayload.class));
+
+        final AutomaticObjectQueueConsumer<TestingPayload> consumer = new AutomaticObjectQueueConsumer<>(
+                queue,
+                new AlwaysSuccessConsumeObjectHandler<>(),
+                new ImmediateExecutorService(),
+                Collections.singletonList(listener));
+
+        verify(listener, timeout(5000)).onListenerNotificationFailed(expectException);
+
+        consumer.close();
+    }
+
     @Test
     public void testListenerOnFailedObjectsCalled() throws Exception {
         List<TestingPayload> storedObjects = generateTestingPayload(1, true);
@@ -254,7 +280,7 @@ public class AutomaticObjectQueueConsumerTest {
         }
     }
 
-    private static final class TestingConsumeObjectListener<E extends Verifiable> implements ConsumeObjectListener<E> {
+    private static class TestingConsumeObjectListener<E extends Verifiable> extends AbstractConsumeObjectListener<E> {
         private final List<E> invalidObjects;
         private final List<E> successObjects;
         private final List<E> failedObjects;

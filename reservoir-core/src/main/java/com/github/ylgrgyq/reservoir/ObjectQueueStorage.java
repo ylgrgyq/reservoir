@@ -6,6 +6,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * A storage used by {@link ObjectQueueConsumer} or {@link ObjectQueueProducer} to
  * store/fetch the serialized objects.
+ * The implementation of this interface should provide the safety for concurrent access
+ * from multiple threads without any external synchronization.
  */
 public interface ObjectQueueStorage<S> extends AutoCloseable {
     /**

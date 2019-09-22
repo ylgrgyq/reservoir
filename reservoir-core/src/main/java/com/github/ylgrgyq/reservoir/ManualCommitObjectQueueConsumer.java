@@ -85,25 +85,20 @@ final class ManualCommitObjectQueueConsumer<E, S> implements ObjectQueueConsumer
     public void close() throws Exception {
         closed = true;
 
-        lock.lock();
-        try {
-            storage.close();
-        } finally {
-            lock.unlock();
-        }
+        storage.close();
     }
 
     private boolean blockFetchFromStorage(long timeout, TimeUnit unit) throws InterruptedException, StorageException {
+        if (closed) {
+            throw new InterruptedException("consumer closed");
+        }
+
+        if (!queue.isEmpty()) {
+            return true;
+        }
+
         lock.lock();
         try {
-            if (closed) {
-                throw new InterruptedException("consumer closed");
-            }
-
-            if (!queue.isEmpty()) {
-                return true;
-            }
-
             final long lastId = lastCommittedId;
             final List<? extends SerializedObjectWithId<S>> payloads;
             if (timeout == 0) {
