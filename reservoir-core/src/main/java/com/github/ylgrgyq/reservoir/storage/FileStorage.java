@@ -59,7 +59,12 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
 
         @Override
         public SerializedObjectWithId<byte[]> next() {
-            assert lastItrIndex >= 0 && lastItrIndex < iterators.size();
+            assert lastItrIndex >= 0;
+
+            if (lastItrIndex >= iterators.size()){
+                throw new NoSuchElementException();
+            }
+
             return iterators.get(lastItrIndex).next();
         }
     }
