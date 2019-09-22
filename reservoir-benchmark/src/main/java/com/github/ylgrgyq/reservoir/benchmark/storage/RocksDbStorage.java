@@ -342,7 +342,7 @@ public final class RocksDbStorage implements ObjectQueueStorage<byte[]> {
                     Thread.sleep(detectTruncateIntervalMillis);
                 } catch (InterruptedException ex) {
                     if (closed){
-                        return;
+                        break;
                     }
                 } catch (Exception ex) {
                     logger.error("Truncate handler failed for entry", ex);
