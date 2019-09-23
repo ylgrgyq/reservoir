@@ -1,6 +1,5 @@
 package com.github.ylgrgyq.reservoir.benchmark.storage;
 
-import com.github.ylgrgyq.reservoir.Bits;
 import com.github.ylgrgyq.reservoir.NamedThreadFactory;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 import com.github.ylgrgyq.reservoir.SerializedObjectWithId;
