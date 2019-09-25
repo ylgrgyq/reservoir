@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -616,12 +615,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
 
     private byte[] encodeObjectWithId(SerializedObjectWithId<byte[]> obj) {
         final byte[] buffer = new byte[Long.BYTES + Integer.BYTES + obj.getSerializedObject().length];
-        int offset = 0;
-        Bits.putLong(buffer, offset, obj.getId());
-        offset += 8;
-        Bits.putInt(buffer, offset, obj.getSerializedObject().length);
-        offset += 4;
-        Bits.putBytes(buffer, offset, obj.getSerializedObject());
+        Bits.putLong(buffer, 0, obj.getId());
+        Bits.putInt(buffer, 8, obj.getSerializedObject().length);
+        Bits.putBytes(buffer, 12, obj.getSerializedObject());
 
         return buffer;
     }

@@ -1,6 +1,5 @@
 package com.github.ylgrgyq.reservoir.storage;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -81,30 +80,22 @@ final class ManifestRecord {
     }
 
     byte[] encode() {
-        final int sstableMetaInfoEncodeSize = Integer.BYTES + Long.BYTES * 3;
-        final byte[] buffer = new byte[1 + metas.size() * sstableMetaInfoEncodeSize + Integer.BYTES * 4];
+        final byte[] buffer = new byte[1 + metas.size() * SSTableFileMetaInfo.SERIALIZED_SIZE + Integer.BYTES * 4];
 
         int offset = 0;
         Bits.putByte(buffer, offset, type.getCode());
-        offset += 1;
-        Bits.putInt(buffer, offset, nextFileNumber);
-        offset += 4;
-        Bits.putInt(buffer, offset, dataLogFileNumber);
-        offset += 4;
-        Bits.putInt(buffer, offset, consumerCommitLogFileNumber);
-        offset += 4;
-        Bits.putInt(buffer, offset, metas.size());
-        offset += 4;
+        Bits.putInt(buffer, offset + 1, nextFileNumber);
+        Bits.putInt(buffer, offset+ 5, dataLogFileNumber);
+        Bits.putInt(buffer, offset + 9, consumerCommitLogFileNumber);
+        Bits.putInt(buffer, offset + 13, metas.size());
+        offset += 17;
 
         for (SSTableFileMetaInfo meta : metas) {
             Bits.putLong(buffer, offset, meta.getFileSize());
-            offset += 8;
-            Bits.putInt(buffer, offset, meta.getFileNumber());
-            offset += 4;
-            Bits.putLong(buffer, offset, meta.getFirstId());
-            offset += 8;
-            Bits.putLong(buffer, offset, meta.getLastId());
-            offset += 8;
+            Bits.putInt(buffer, offset + 8, meta.getFileNumber());
+            Bits.putLong(buffer, offset + 12, meta.getFirstId());
+            Bits.putLong(buffer, offset + 20, meta.getLastId());
+            offset += SSTableFileMetaInfo.SERIALIZED_SIZE;
         }
 
         return buffer;

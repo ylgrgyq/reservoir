@@ -3,6 +3,8 @@ package com.github.ylgrgyq.reservoir.storage;
 import java.util.Objects;
 
 final class SSTableFileMetaInfo {
+    static int SERIALIZED_SIZE = Integer.BYTES + Long.BYTES + Long.BYTES + Long.BYTES;
+
     private int fileNumber;
     private long firstId;
     private long lastId;
