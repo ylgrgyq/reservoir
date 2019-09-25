@@ -73,7 +73,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
         void onHandleObject(E obj) throws Exception;
 
         /**
-         * Called when {@link ConsumeObjectHandler#onHandleObject(E)} throws an exception.
+         * Called when {@code onHandleObject(E)} throws an exception.
          *
          * @param obj       the consumed object who caused the exception
          * @param throwable the exception caught
@@ -216,7 +216,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
 
             worker.interrupt();
             worker.join();
-        }  else {
+        } else {
             workerState.set(SHUTDOWN);
         }
 
