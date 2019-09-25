@@ -53,9 +53,8 @@ final class Manifest {
             final int fileNumber = getNextFileNumber();
             manifestFileNumber = fileNumber;
             manifestFileName = FileName.getManifestFileName(fileNumber);
-            final FileChannel manifestFile = FileChannel.open(Paths.get(baseDir, manifestFileName),
+            manifestRecordWriter = new LogWriter(Paths.get(baseDir, manifestFileName),
                     StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            manifestRecordWriter = new LogWriter(manifestFile);
         }
 
         if (record.getType() == Type.PLAIN) {
@@ -89,9 +88,9 @@ final class Manifest {
         final List<SSTableFileMetaInfo> ms = new ArrayList<>();
         try (LogReader reader = new LogReader(manifestFile, true)) {
             while (true) {
-                final List<byte[]> logOpt = reader.readLog();
-                if (!logOpt.isEmpty()) {
-                    final ManifestRecord record = ManifestRecord.decode(logOpt);
+                final CompositeBytesReader bytesReader = reader.readLog();
+                if (!bytesReader.isEmpty()) {
+                    final ManifestRecord record = ManifestRecord.decode(bytesReader);
                     switch (record.getType()) {
                         case PLAIN:
                             nextFileNumber = record.getNextFileNumber();

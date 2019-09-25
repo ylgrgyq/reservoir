@@ -14,19 +14,18 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Random;
 import java.util.zip.CRC32;
 
 import static com.github.ylgrgyq.reservoir.TestingUtils.makeString;
 import static com.github.ylgrgyq.reservoir.TestingUtils.nextPositiveInt;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class LogTest {
     private String tempLogFile;
     private LogWriter logWriter;
     private LogReader logReader;
-    private FileChannel writeChannel;
     private FileChannel readChannel;
 
     @Before
@@ -36,12 +35,10 @@ public class LogTest {
         FileUtils.forceMkdir(new File(tempDir));
         this.tempLogFile = tempDir + File.separator + "log_test";
 
-        writeChannel = FileChannel.open(Paths.get(tempLogFile), StandardOpenOption.CREATE,
+        logWriter = new LogWriter(Paths.get(tempLogFile), StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE);
         readChannel = FileChannel.open(Paths.get(tempLogFile),
                 StandardOpenOption.READ);
-
-        logWriter = new LogWriter(writeChannel);
         logReader = new LogReader(readChannel, true);
     }
 
@@ -113,7 +110,7 @@ public class LogTest {
     public void readWriteTrailer() throws Exception {
         // write a log which only leave a header size space in a block
         writeLog(makeString("Hello", Constant.kLogBlockSize - 2 * Constant.kLogHeaderSize));
-        assertThat(writeChannel.size()).isEqualTo(Constant.kLogBlockSize - Constant.kLogHeaderSize);
+        assertThat(logWriter.fileChannel().size()).isEqualTo(Constant.kLogBlockSize - Constant.kLogHeaderSize);
         // write a new log which will be write to a new block
         writeLog("World");
 
@@ -127,7 +124,7 @@ public class LogTest {
     public void paddingBlock() throws Exception {
         // write a log which leaves space in block shorter than the header size
         writeLog(makeString("Hello", Constant.kLogBlockSize - 2 * Constant.kLogHeaderSize + 6));
-        assertThat(writeChannel.size()).isEqualTo(Constant.kLogBlockSize - Constant.kLogHeaderSize + 6);
+        assertThat(logWriter.fileChannel().size()).isEqualTo(Constant.kLogBlockSize - Constant.kLogHeaderSize + 6);
         // write a new log which will be write to a new block
         writeLog("World");
 
@@ -183,7 +180,7 @@ public class LogTest {
     @Test
     public void badLength() throws Exception {
         writeLog(makeString("Hello", Constant.kLogBlockSize / 2));
-        long pos = writeChannel.position();
+        long pos = logWriter.fileChannel().position();
         writeLog(makeString("World", Constant.kLogBlockSize));
         assert Constant.kLogHeaderSize == 11;
         // set length of the second log to 32767
@@ -207,7 +204,7 @@ public class LogTest {
     @Test
     public void readHeaderUnfinishedLog() throws Exception {
         writeLog("Hello");
-        long pos = writeChannel.position();
+        long pos = logWriter.fileChannel().position();
         writeLog("World");
         assert Constant.kLogHeaderSize == 11;
         truncateLogFile(pos + 5);
@@ -218,7 +215,7 @@ public class LogTest {
     @Test
     public void readDataUnfinishedLog() throws Exception {
         writeLog("Hello");
-        long pos = writeChannel.position();
+        long pos = logWriter.fileChannel().position();
         writeLog("World");
         assert Constant.kLogHeaderSize == 11;
         truncateLogFile(pos + 12);
@@ -274,7 +271,7 @@ public class LogTest {
 
         // there's 2 * kLogHeaderSize bytes left in second block including header
         // truncate all of them
-        truncateLogFile(writeChannel.size() - 2 * Constant.kLogHeaderSize);
+        truncateLogFile(logWriter.fileChannel().size() - 2 * Constant.kLogHeaderSize);
         assertThat(readLog()).isEqualTo("EOF");
     }
 
@@ -284,7 +281,7 @@ public class LogTest {
 
         // there's 2 * kLogHeaderSize bytes left in second block including header
         // truncate some data and leaves header and some of the data block
-        truncateLogFile(writeChannel.size() - Constant.kLogHeaderSize / 2);
+        truncateLogFile(logWriter.fileChannel().size() - Constant.kLogHeaderSize / 2);
         assertThat(readLog()).isEqualTo("EOF");
     }
 
@@ -294,29 +291,17 @@ public class LogTest {
     }
 
     private String readLog() throws IOException, StorageException {
-        List<byte[]> logs = logReader.readLog();
+        CompositeBytesReader logs = logReader.readLog();
         if (logs.isEmpty()) {
             return "EOF";
         } else {
-            return new String(concatByteArray(logs), StandardCharsets.UTF_8);
+            return new String(logs.compact(), StandardCharsets.UTF_8);
         }
-    }
-
-    private byte[] concatByteArray(List<byte[]> out) {
-        final byte[] ret = new byte[out.stream().mapToInt(bs -> bs.length).sum()];
-        int len = 0;
-        for (byte[] bs : out) {
-            System.arraycopy(bs, 0, ret, len, bs.length);
-            len += bs.length;
-        }
-        return ret;
     }
 
     private void reopenWriter() throws Exception {
         logWriter.close();
-        assert !writeChannel.isOpen();
-        writeChannel = FileChannel.open(Paths.get(tempLogFile), StandardOpenOption.WRITE, StandardOpenOption.APPEND);
-        logWriter = new LogWriter(writeChannel);
+        logWriter = new LogWriter(Paths.get(tempLogFile), StandardOpenOption.WRITE, StandardOpenOption.APPEND);
     }
 
     private void setByteInFile(long position, byte newValue) throws Exception {

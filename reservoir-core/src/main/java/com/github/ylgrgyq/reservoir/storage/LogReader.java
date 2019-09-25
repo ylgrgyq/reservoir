@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.zip.CRC32;
 
@@ -29,7 +28,7 @@ final class LogReader implements Closeable {
         this.checkChecksum = checkChecksum;
     }
 
-    List<byte[]> readLog() throws IOException, StorageException {
+    CompositeBytesReader readLog() throws IOException, StorageException {
         final ArrayList<byte[]> outPut = new ArrayList<>();
         boolean isFragmented = false;
         while (true) {
@@ -40,7 +39,7 @@ final class LogReader implements Closeable {
                         throw new StorageException("partial record without end(1)");
                     }
                     assert !outPut.isEmpty();
-                    return outPut;
+                    return new CompositeBytesReader(outPut);
                 case kFirstType:
                     if (isFragmented) {
                         throw new StorageException("partial record without end(2)");
@@ -57,12 +56,12 @@ final class LogReader implements Closeable {
                         throw new StorageException("missing start for the last fragmented record");
                     }
                     assert !outPut.isEmpty();
-                    return outPut;
+                    return new CompositeBytesReader(outPut);
                 case kEOF:
                     // we need to return kEOF consistently after encounter the kEOF for the first time.
                     // so we do not clear the buffer, otherwise the next read will try to read the last block
                     // of this log file one more time instead of return kEOF again
-                    return Collections.emptyList();
+                    return CompositeBytesReader.emptyReader;
                 default:
                     throw new StorageException("unknown record type: " + type);
             }

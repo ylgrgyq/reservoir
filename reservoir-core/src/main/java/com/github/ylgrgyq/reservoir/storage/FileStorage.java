@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -467,9 +466,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                 throw new IllegalStateException("failed to lock directory: " + baseDir);
             }
         } finally {
-          if (fileLock == null || !fileLock.isValid()) {
-              lockChannel.close();
-          }
+            if (fileLock == null || !fileLock.isValid()) {
+                lockChannel.close();
+            }
         }
 
         return fileLock;
@@ -526,9 +525,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
         // 1. read all pending data from data log file
         try (LogReader reader = new LogReader(readLogChannel, true)) {
             while (true) {
-                List<byte[]> logOpt = reader.readLog();
-                if (!logOpt.isEmpty()) {
-                    final SerializedObjectWithId<byte[]> e = decodeObjectWithId(logOpt);
+                final CompositeBytesReader bytesReader = reader.readLog();
+                if (!bytesReader.isEmpty()) {
+                    final SerializedObjectWithId<byte[]> e = decodeObjectWithId(bytesReader);
                     if (recoveredMm == null) {
                         recoveredMm = new Memtable();
                     }
@@ -549,8 +548,7 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                 // but we only reuse this old data log file when no sstable is flushed during reading this file
                 assert dataLogWriter == null;
                 assert dataLogFileNumber == 0;
-                final FileChannel logFile = FileChannel.open(logFilePath, StandardOpenOption.WRITE);
-                dataLogWriter = new LogWriter(logFile, readLogChannel.position());
+                dataLogWriter = new LogWriter(logFilePath, readLogChannel.position(), StandardOpenOption.WRITE);
                 dataLogFileNumber = fileNumber;
                 if (recoveredMm != null) {
                     mm = recoveredMm;
@@ -591,9 +589,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
         try (LogReader reader = new LogReader(ch, true)) {
             long id = lastCommittedId;
             while (true) {
-                List<byte[]> logOpt = reader.readLog();
-                if (!logOpt.isEmpty()) {
-                    id = Bits.getLong(compact(logOpt), 0);
+                final CompositeBytesReader bytesReader = reader.readLog();
+                if (!bytesReader.isEmpty()) {
+                    id = bytesReader.getLong();
                 } else {
                     break;
                 }
@@ -602,10 +600,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
             readEndPosition = ch.position();
 
             if (id > lastCommittedId) {
-                final FileChannel logFile = FileChannel.open(logFilePath, StandardOpenOption.WRITE);
                 assert consumerCommitLogWriter == null;
                 assert consumerCommitLogFileNumber == 0;
-                consumerCommitLogWriter = new LogWriter(logFile, readEndPosition);
+                consumerCommitLogWriter = new LogWriter(logFilePath, readEndPosition, StandardOpenOption.WRITE);
                 consumerCommitLogFileNumber = fileNumber;
                 lastCommittedId = id;
                 return true;
@@ -617,31 +614,20 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     }
 
     private byte[] encodeObjectWithId(SerializedObjectWithId<byte[]> obj) {
-        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + obj.getSerializedObject().length);
-        buffer.putLong(obj.getId());
-        buffer.putInt(obj.getSerializedObject().length);
-        buffer.put(obj.getSerializedObject());
+        final byte[] buffer = new byte[Long.BYTES + Integer.BYTES + obj.getSerializedObject().length];
+        Bits.putLong(buffer, 0, obj.getId());
+        Bits.putInt(buffer, 8, obj.getSerializedObject().length);
+        Bits.putBytes(buffer, 12, obj.getSerializedObject());
 
-        return buffer.array();
+        return buffer;
     }
 
-    private SerializedObjectWithId<byte[]> decodeObjectWithId(List<byte[]> bytes) {
-        final ByteBuffer buffer = ByteBuffer.wrap(compact(bytes));
-        final long id = buffer.getLong();
-        final int length = buffer.getInt();
-        final byte[] bs = new byte[length];
-        buffer.get(bs);
+    private SerializedObjectWithId<byte[]> decodeObjectWithId(CompositeBytesReader reader) {
+        final long id = reader.getLong();
+        final int length = reader.getInt();
+        final byte[] bs = reader.getBytes(length);
 
         return new SerializedObjectWithId<>(id, bs);
-    }
-
-    private byte[] compact(List<byte[]> output) {
-        final int size = output.stream().mapToInt(b -> b.length).sum();
-        final ByteBuffer buffer = ByteBuffer.allocate(size);
-        for (byte[] bytes : output) {
-            buffer.put(bytes);
-        }
-        return buffer.array();
     }
 
     private List<SerializedObjectWithId<byte[]>> doFetch(long fromId, int limit) throws StorageException {
@@ -732,9 +718,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     private LogWriter createNewDataLogWriter() throws IOException {
         final int nextLogFileNumber = manifest.getNextFileNumber();
         final String nextLogFile = FileName.getLogFileName(nextLogFileNumber);
-        final FileChannel logFile = FileChannel.open(Paths.get(baseDir, nextLogFile),
+        final LogWriter writer = new LogWriter(Paths.get(baseDir, nextLogFile),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        final LogWriter writer = new LogWriter(logFile);
         dataLogFileNumber = nextLogFileNumber;
         return writer;
     }
@@ -742,9 +727,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     private LogWriter createConsumerCommitLogWriter() throws IOException {
         final int nextLogFileNumber = manifest.getNextFileNumber();
         final String nextLogFile = FileName.getConsumerCommittedIdFileName(nextLogFileNumber);
-        final FileChannel logFile = FileChannel.open(Paths.get(baseDir, nextLogFile),
+        final LogWriter writer = new LogWriter(Paths.get(baseDir, nextLogFile),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        final LogWriter writer = new LogWriter(logFile);
         consumerCommitLogFileNumber = nextLogFileNumber;
         return writer;
     }

@@ -1,6 +1,5 @@
 package com.github.ylgrgyq.reservoir.storage;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -81,48 +80,41 @@ final class ManifestRecord {
     }
 
     byte[] encode() {
-        final int sstableMetaInfoEncodeSize = Integer.BYTES + Long.BYTES * 3;
-        final ByteBuffer buffer = ByteBuffer.allocate(1 + metas.size() * sstableMetaInfoEncodeSize + Integer.BYTES * 4);
-        buffer.put(type.getCode());
-        buffer.putInt(nextFileNumber);
-        buffer.putInt(dataLogFileNumber);
-        buffer.putInt(consumerCommitLogFileNumber);
-        buffer.putInt(metas.size());
+        final byte[] buffer = new byte[1 + metas.size() * SSTableFileMetaInfo.SERIALIZED_SIZE + Integer.BYTES * 4];
+
+        int offset = 0;
+        Bits.putByte(buffer, offset, type.getCode());
+        Bits.putInt(buffer, offset + 1, nextFileNumber);
+        Bits.putInt(buffer, offset+ 5, dataLogFileNumber);
+        Bits.putInt(buffer, offset + 9, consumerCommitLogFileNumber);
+        Bits.putInt(buffer, offset + 13, metas.size());
+        offset += 17;
 
         for (SSTableFileMetaInfo meta : metas) {
-            buffer.putLong(meta.getFileSize());
-            buffer.putInt(meta.getFileNumber());
-            buffer.putLong(meta.getFirstId());
-            buffer.putLong(meta.getLastId());
+            Bits.putLong(buffer, offset, meta.getFileSize());
+            Bits.putInt(buffer, offset + 8, meta.getFileNumber());
+            Bits.putLong(buffer, offset + 12, meta.getFirstId());
+            Bits.putLong(buffer, offset + 20, meta.getLastId());
+            offset += SSTableFileMetaInfo.SERIALIZED_SIZE;
         }
 
-        return buffer.array();
+        return buffer;
     }
 
-    private static byte[] compact(List<byte[]> output) {
-        final int size = output.stream().mapToInt(b -> b.length).sum();
-        final ByteBuffer buffer = ByteBuffer.allocate(size);
-        for (byte[] bytes : output) {
-            buffer.put(bytes);
-        }
-        return buffer.array();
-    }
+    static ManifestRecord decode(CompositeBytesReader bytesReader) {
+        final ManifestRecord record = Type.newManifestRecord(bytesReader.get());
 
-    static ManifestRecord decode(List<byte[]> bytes) {
-        final ByteBuffer buffer = ByteBuffer.wrap(compact(bytes));
-        final ManifestRecord record = Type.newManifestRecord(buffer.get());
+        record.setNextFileNumber(bytesReader.getInt());
+        record.setDataLogFileNumber(bytesReader.getInt());
+        record.setConsumerCommitLogFileNumber(bytesReader.getInt());
 
-        record.setNextFileNumber(buffer.getInt());
-        record.setDataLogFileNumber(buffer.getInt());
-        record.setConsumerCommitLogFileNumber(buffer.getInt());
-
-        final int metasSize = buffer.getInt();
+        final int metasSize = bytesReader.getInt();
         for (int i = 0; i < metasSize; i++) {
             SSTableFileMetaInfo meta = new SSTableFileMetaInfo();
-            meta.setFileSize(buffer.getLong());
-            meta.setFileNumber(buffer.getInt());
-            meta.setFirstId(buffer.getLong());
-            meta.setLastId(buffer.getLong());
+            meta.setFileSize(bytesReader.getLong());
+            meta.setFileNumber(bytesReader.getInt());
+            meta.setFirstId(bytesReader.getLong());
+            meta.setLastId(bytesReader.getLong());
 
             record.addMeta(meta);
         }
