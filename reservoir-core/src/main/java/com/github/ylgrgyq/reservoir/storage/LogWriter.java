@@ -35,8 +35,10 @@ final class LogWriter implements Closeable {
 
     @Override
     public void close() throws IOException {
-        flush(true);
-        workingFileChannel.close();
+        if (workingFileChannel.isOpen()) {
+            flush(true);
+            workingFileChannel.close();
+        }
     }
 
     void append(byte[] data) throws IOException {

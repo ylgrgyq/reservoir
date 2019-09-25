@@ -210,7 +210,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
         closed = true;
 
         if (worker != Thread.currentThread()) {
-            while (workerState.compareAndSet(INTERRUPTABLE, SHUTDOWN)) {
+            while (workerState.get() != SHUTDOWN && !workerState.compareAndSet(INTERRUPTABLE, SHUTDOWN)) {
                 Thread.sleep(100);
             }
 

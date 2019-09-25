@@ -99,6 +99,10 @@ class BufferedChannel implements AutoCloseable {
         return (int) (currentPos - pos);
     }
 
+    boolean isOpen() {
+        return fileChannel.isOpen();
+    }
+
     @Override
     public synchronized void close() throws IOException {
         fileChannel.close();
