@@ -25,6 +25,7 @@ public final class ObjectQueueBuilder<E, S> {
      * Use {@link IdentityCodec} as the default codec.
      *
      * @param storage a {@link ObjectQueueStorage} instance to store serialized object
+     * @param <E>     the type of the object to insert into the building {@link ObjectQueue}
      * @return an new instance of {@link ObjectQueueBuilder}
      */
     public static <E> ObjectQueueBuilder<E, E> newBuilder(ObjectQueueStorage<E> storage) {
@@ -38,6 +39,9 @@ public final class ObjectQueueBuilder<E, S> {
      *
      * @param storage a {@link ObjectQueueStorage} instance to store serialized object
      * @param codec   a {@link Codec} instance to serialize/deserialize object in {@link ObjectQueue}
+     * @param <E>     the type of the object to insert into the building {@link ObjectQueue}
+     * @param <S>     the serialized type of type {@code E}. {@link ObjectQueueStorage} is
+     *                using type {@code S} to store element.
      * @return an new instance of {@link ObjectQueueBuilder}
      */
     public static <E, S> ObjectQueueBuilder<E, S> newBuilder(ObjectQueueStorage<S> storage, Codec<E, S> codec) {

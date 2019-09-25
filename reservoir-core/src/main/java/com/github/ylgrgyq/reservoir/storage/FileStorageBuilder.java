@@ -86,6 +86,7 @@ public class FileStorageBuilder {
      * The default value is false.
      *
      * @param syncFlushConsumerCommitLogWriter true to force flush updated commit id to internal file
+     * @return this
      */
     public FileStorageBuilder syncFlushConsumerCommitLogWriter(boolean syncFlushConsumerCommitLogWriter) {
         this.forceSyncOnFlushConsumerCommitLogWriter = syncFlushConsumerCommitLogWriter;
@@ -100,6 +101,7 @@ public class FileStorageBuilder {
      * The default value is false.
      *
      * @param syncFlushDataLogWriter true to force flush stored data to internal file
+     * @return this
      */
     public FileStorageBuilder syncFlushDataLogWriter(boolean syncFlushDataLogWriter) {
         this.forceSyncOnFlushDataLogWriter = syncFlushDataLogWriter;
