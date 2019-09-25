@@ -142,4 +142,4 @@ consumer.close();
 
 # License
 
-Copyright 2019 Rui Guo. Released under the [MIT License](https://github.com/ylgrgyq/reservoir10.10.138.136/blob/master/LICENSE.md).
+Copyright 2019 Rui Guo. Released under the [MIT License](https://github.com/ylgrgyq/reservoir/blob/master/LICENSE.md).
