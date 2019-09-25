@@ -467,9 +467,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                 throw new IllegalStateException("failed to lock directory: " + baseDir);
             }
         } finally {
-          if (fileLock == null || !fileLock.isValid()) {
-              lockChannel.close();
-          }
+            if (fileLock == null || !fileLock.isValid()) {
+                lockChannel.close();
+            }
         }
 
         return fileLock;
@@ -549,8 +549,7 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
                 // but we only reuse this old data log file when no sstable is flushed during reading this file
                 assert dataLogWriter == null;
                 assert dataLogFileNumber == 0;
-                final FileChannel logFile = FileChannel.open(logFilePath, StandardOpenOption.WRITE);
-                dataLogWriter = new LogWriter(logFile, readLogChannel.position());
+                dataLogWriter = new LogWriter(logFilePath, readLogChannel.position(), StandardOpenOption.WRITE);
                 dataLogFileNumber = fileNumber;
                 if (recoveredMm != null) {
                     mm = recoveredMm;
@@ -602,10 +601,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
             readEndPosition = ch.position();
 
             if (id > lastCommittedId) {
-                final FileChannel logFile = FileChannel.open(logFilePath, StandardOpenOption.WRITE);
                 assert consumerCommitLogWriter == null;
                 assert consumerCommitLogFileNumber == 0;
-                consumerCommitLogWriter = new LogWriter(logFile, readEndPosition);
+                consumerCommitLogWriter = new LogWriter(logFilePath, readEndPosition, StandardOpenOption.WRITE);
                 consumerCommitLogFileNumber = fileNumber;
                 lastCommittedId = id;
                 return true;
@@ -732,9 +730,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     private LogWriter createNewDataLogWriter() throws IOException {
         final int nextLogFileNumber = manifest.getNextFileNumber();
         final String nextLogFile = FileName.getLogFileName(nextLogFileNumber);
-        final FileChannel logFile = FileChannel.open(Paths.get(baseDir, nextLogFile),
+        final LogWriter writer = new LogWriter(Paths.get(baseDir, nextLogFile),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        final LogWriter writer = new LogWriter(logFile);
         dataLogFileNumber = nextLogFileNumber;
         return writer;
     }
@@ -742,9 +739,8 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     private LogWriter createConsumerCommitLogWriter() throws IOException {
         final int nextLogFileNumber = manifest.getNextFileNumber();
         final String nextLogFile = FileName.getConsumerCommittedIdFileName(nextLogFileNumber);
-        final FileChannel logFile = FileChannel.open(Paths.get(baseDir, nextLogFile),
+        final LogWriter writer = new LogWriter(Paths.get(baseDir, nextLogFile),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        final LogWriter writer = new LogWriter(logFile);
         consumerCommitLogFileNumber = nextLogFileNumber;
         return writer;
     }

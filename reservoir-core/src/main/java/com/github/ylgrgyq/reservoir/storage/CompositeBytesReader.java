@@ -1,57 +1,66 @@
 package com.github.ylgrgyq.reservoir.storage;
 
-import java.nio.*;
 import java.util.List;
 
 class CompositeBytesReader {
     private final List<byte[]> buckets;
     private int bucketIndex;
     private int offset;
+    private byte[] workingBucket;
 
-    public CompositeBytesReader(List<byte[]> buckets) {
+    CompositeBytesReader(List<byte[]> buckets) {
+        assert !buckets.isEmpty();
+
         this.buckets = buckets;
+        this.workingBucket = buckets.get(0);
     }
 
-    private int getBucketIndex() {
-        return bucketIndex / buckets.size();
-    }
-
-    public byte get() {
-        byte[] bucket;
-        for (bucket = buckets.get(bucketIndex); offset >= bucket.length; ){
-            offset = 0;
-            ++bucketIndex;
-        }
-
+    byte get() {
+        final byte[] bucket = forwardToNextNonEmptyBucket();
         return bucket[offset++];
     }
 
-//    public char getChar() {
-//        byte[] bucket;
-//        for (bucket = buckets.get(bucketIndex); offset >= bucket.length; ){
-//            offset = 0;
-//            ++bucketIndex;
-//        }
-//        return bucket[offset++];
-//    }
-
-    public short getShort() {
-        return 0;
+    short getShort() {
+        return (short) (((get() & 0xFF) << 8) +
+                (get() & 0xFF));
     }
 
-    public int getInt() {
-        return 0;
+    int getInt() {
+        return (get() << 24) +
+                ((get() & 0xFF) << 16) +
+                ((get() & 0xFF) << 8) +
+                (get() & 0xFF);
     }
 
-    public long getLong() {
-        return 0;
+    long getLong() {
+        return ((long) get() << 56) +
+                ((get() & 0xFFL) << 48) +
+                ((get() & 0xFFL) << 40) +
+                ((get() & 0xFFL) << 32) +
+                ((get() & 0xFFL) << 24) +
+                ((get() & 0xFFL) << 16) +
+                ((get() & 0xFFL) << 8) +
+                (get() & 0xFFL);
     }
 
-    public float getFloat() {
-        return 0;
+    byte[] getBytes(int length) {
+        final byte[] bs = new byte[length];
+        for (int offsetInBs = 0; offsetInBs < length; ) {
+            forwardToNextNonEmptyBucket();
+            int len = Math.min(length, workingBucket.length - offset);
+            System.arraycopy(workingBucket, offset, bs, offsetInBs, len);
+            offsetInBs += len;
+            offset += len;
+        }
+        return bs;
     }
 
-    public double getDouble() {
-        return 0;
+    private byte[] forwardToNextNonEmptyBucket() {
+        byte[] bucket;
+        for (bucket = workingBucket; offset >= bucket.length; bucket = buckets.get(++bucketIndex)) {
+            offset = 0;
+        }
+        workingBucket = bucket;
+        return bucket;
     }
 }

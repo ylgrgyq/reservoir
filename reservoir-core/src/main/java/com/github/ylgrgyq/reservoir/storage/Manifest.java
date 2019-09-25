@@ -53,9 +53,8 @@ final class Manifest {
             final int fileNumber = getNextFileNumber();
             manifestFileNumber = fileNumber;
             manifestFileName = FileName.getManifestFileName(fileNumber);
-            final FileChannel manifestFile = FileChannel.open(Paths.get(baseDir, manifestFileName),
+            manifestRecordWriter = new LogWriter(Paths.get(baseDir, manifestFileName),
                     StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            manifestRecordWriter = new LogWriter(manifestFile);
         }
 
         if (record.getType() == Type.PLAIN) {

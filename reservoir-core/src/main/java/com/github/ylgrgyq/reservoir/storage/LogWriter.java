@@ -1,9 +1,15 @@
 package com.github.ylgrgyq.reservoir.storage;
 
+import com.github.ylgrgyq.reservoir.VisibleForTesting;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32;
 
 final class LogWriter implements Closeable {
@@ -13,13 +19,14 @@ final class LogWriter implements Closeable {
     private final CRC32 checksum;
     private int blockOffset;
 
-    LogWriter(FileChannel workingFileChannel) throws IOException {
-        this(workingFileChannel, 0);
+    LogWriter(Path logFilePath, OpenOption... options) throws IOException {
+        this(logFilePath, 0, options);
     }
 
-    LogWriter(FileChannel workingFileChannel, long writePosition) throws IOException {
-        workingFileChannel.position(writePosition);
-        this.workingFileChannel = new BufferedChannel(workingFileChannel);
+    LogWriter(Path logFilePath, long writePosition, OpenOption... options) throws IOException {
+        final FileChannel fileChannel = FileChannel.open(logFilePath, options);
+        fileChannel.position(writePosition);
+        this.workingFileChannel = new BufferedChannel(fileChannel);
         this.headerBuffer = ByteBuffer.allocateDirect(Constant.kLogHeaderSize);
         this.blockOffset = 0;
         this.zeros = ByteBuffer.allocate(Constant.kLogHeaderSize);
@@ -83,6 +90,11 @@ final class LogWriter implements Closeable {
             begin = false;
             dataSizeRemain -= fragmentSize;
         }
+    }
+
+    @VisibleForTesting
+    BufferedChannel fileChannel() {
+        return workingFileChannel;
     }
 
     private void paddingBlock(int blockLeft) throws IOException {
