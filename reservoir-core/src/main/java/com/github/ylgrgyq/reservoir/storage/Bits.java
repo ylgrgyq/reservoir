@@ -33,6 +33,12 @@ final class Bits {
         b[off] = val;
     }
 
+    static byte[] getBytes(byte[] b, int off, int len) {
+        final byte[] bs = new byte[len];
+        System.arraycopy(b, off, bs, 0, len);
+        return bs;
+    }
+
     static void putBytes(byte[] b, int off, byte[] val) {
         System.arraycopy(val, 0, b, off, val.length);
     }

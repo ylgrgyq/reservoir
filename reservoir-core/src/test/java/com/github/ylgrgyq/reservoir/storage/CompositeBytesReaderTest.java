@@ -28,6 +28,27 @@ public class CompositeBytesReaderTest {
     }
 
     @Test
+    public void testGetShortFromOneByteArray() {
+        final byte[] bucket = new byte[100];
+        fillBytes(bucket, Short.MAX_VALUE);
+        final CompositeBytesReader reader = new CompositeBytesReader(Collections.singletonList(bucket));
+        assertThat(reader.getShort()).isEqualTo(Short.MAX_VALUE);
+    }
+
+    @Test
+    public void testGetShortFromTwoByteArray() {
+        final byte[] bs = new byte[100];
+        fillBytes(bs, Short.MIN_VALUE);
+
+        for (int splitIndex = 0; splitIndex < bs.length; splitIndex++) {
+            List<byte[]> buckets = splitBytesToTwoByteArray(bs, splitIndex);
+
+            final CompositeBytesReader reader = new CompositeBytesReader(buckets);
+            assertThat(reader.getShort()).isEqualTo(Short.MIN_VALUE);
+        }
+    }
+
+    @Test
     public void testGetIntFromOneByteArray() {
         final byte[] bucket = new byte[100];
         fillBytes(bucket, Integer.MAX_VALUE);
@@ -124,26 +145,38 @@ public class CompositeBytesReaderTest {
         assertThat(reader.getLong()).isEqualTo(Long.MAX_VALUE);
     }
 
+    private void fillBytes(byte[] bytes, short num) {
+        int off;
+        for (off = 0; off < bytes.length - Short.BYTES; off += Short.BYTES) {
+            Bits.putShort(bytes, off, num);
+        }
+
+        final int paddingLen = bytes.length - off;
+        final byte[] padding = new byte[Short.BYTES];
+        Bits.putShort(padding, 0, num);
+        System.arraycopy(padding, 0, bytes, off, paddingLen);
+    }
+
     private void fillBytes(byte[] bytes, int num) {
         int off;
-        for (off = 0; off < bytes.length - 4; off += 4) {
+        for (off = 0; off < bytes.length - Integer.BYTES; off += Integer.BYTES) {
             Bits.putInt(bytes, off, num);
         }
 
         final int paddingLen = bytes.length - off;
-        final byte[] padding = new byte[4];
+        final byte[] padding = new byte[Integer.BYTES];
         Bits.putInt(padding, 0, num);
         System.arraycopy(padding, 0, bytes, off, paddingLen);
     }
 
     private void fillBytes(byte[] bytes, long num) {
         int off;
-        for (off = 0; off < bytes.length - 8; off += 8) {
+        for (off = 0; off < bytes.length - Long.BYTES; off += Long.BYTES) {
             Bits.putLong(bytes, off, num);
         }
 
         final int paddingLen = bytes.length - off;
-        final byte[] padding = new byte[8];
+        final byte[] padding = new byte[Long.BYTES];
         Bits.putLong(padding, 0, num);
         System.arraycopy(padding, 0, bytes, off, paddingLen);
     }
