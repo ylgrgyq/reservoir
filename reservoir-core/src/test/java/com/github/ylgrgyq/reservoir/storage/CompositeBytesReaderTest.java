@@ -11,6 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CompositeBytesReaderTest {
     @Test
+    public void testEmptyBuckets() {
+        final CompositeBytesReader reader = new CompositeBytesReader(Collections.emptyList());
+        assertThat(reader.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void testEveryBucketIsEmpty() {
+        List<byte[]> buckets = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            buckets.add(new byte[0]);
+        }
+
+        final CompositeBytesReader reader = new CompositeBytesReader(buckets);
+        assertThat(reader.isEmpty()).isTrue();
+    }
+
+    @Test
     public void testGetIntFromOneByteArray() {
         final byte[] bucket = new byte[100];
         fillBytes(bucket, Integer.MAX_VALUE);

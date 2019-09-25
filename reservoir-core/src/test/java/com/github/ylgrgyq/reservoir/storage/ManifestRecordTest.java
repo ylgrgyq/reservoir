@@ -14,7 +14,7 @@ public class ManifestRecordTest {
         record.setNextFileNumber(102);
         record.setConsumerCommitLogFileNumber(103);
 
-        assertThat(ManifestRecord.decode(Lists.list(record.encode()))).isEqualTo(record);
+        assertThat(ManifestRecord.decode(new CompositeBytesReader(Lists.list(record.encode())))).isEqualTo(record);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class ManifestRecordTest {
             record.addMeta(meta);
         }
 
-        assertThat(ManifestRecord.decode(Lists.list(record.encode()))).isEqualTo(record);
+        assertThat(ManifestRecord.decode(new CompositeBytesReader(Lists.list(record.encode())))).isEqualTo(record);
     }
 
 }

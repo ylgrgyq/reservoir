@@ -14,7 +14,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Random;
 import java.util.zip.CRC32;
 
@@ -292,22 +291,12 @@ public class LogTest {
     }
 
     private String readLog() throws IOException, StorageException {
-        List<byte[]> logs = logReader.readLog();
+        CompositeBytesReader logs = logReader.readLog();
         if (logs.isEmpty()) {
             return "EOF";
         } else {
-            return new String(concatByteArray(logs), StandardCharsets.UTF_8);
+            return new String(logs.compact(), StandardCharsets.UTF_8);
         }
-    }
-
-    private byte[] concatByteArray(List<byte[]> out) {
-        final byte[] ret = new byte[out.stream().mapToInt(bs -> bs.length).sum()];
-        int len = 0;
-        for (byte[] bs : out) {
-            System.arraycopy(bs, 0, ret, len, bs.length);
-            len += bs.length;
-        }
-        return ret;
     }
 
     private void reopenWriter() throws Exception {

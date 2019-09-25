@@ -1,18 +1,30 @@
 package com.github.ylgrgyq.reservoir.storage;
 
+import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 
 class CompositeBytesReader {
+    static CompositeBytesReader emptyReader = new CompositeBytesReader(Collections.emptyList());
+
     private final List<byte[]> buckets;
     private int bucketIndex;
     private int offset;
+    @Nullable
     private byte[] workingBucket;
 
     CompositeBytesReader(List<byte[]> buckets) {
-        assert !buckets.isEmpty();
-
         this.buckets = buckets;
-        this.workingBucket = buckets.get(0);
+        this.workingBucket = buckets.isEmpty() ? null : buckets.get(0);
+    }
+
+    boolean isEmpty() {
+        if (buckets.isEmpty()) {
+            return true;
+        }
+
+        return buckets.stream().noneMatch(bytes -> bytes.length != 0);
     }
 
     byte get() {
@@ -45,17 +57,28 @@ class CompositeBytesReader {
 
     byte[] getBytes(int length) {
         final byte[] bs = new byte[length];
-        for (int offsetInBs = 0; offsetInBs < length; ) {
+        int len;
+        for (int offsetInBs = 0; offsetInBs < length; offsetInBs += len) {
             forwardToNextNonEmptyBucket();
-            final int len = Math.min(length, workingBucket.length - offset);
+            assert workingBucket != null;
+            len = Math.min(length, workingBucket.length - offset);
             System.arraycopy(workingBucket, offset, bs, offsetInBs, len);
-            offsetInBs += len;
             offset += len;
         }
         return bs;
     }
 
+    byte[] compact() {
+        final int size = buckets.stream().mapToInt(b -> b.length).sum();
+        final ByteBuffer buffer = ByteBuffer.allocate(size);
+        for (byte[] bytes : buckets) {
+            buffer.put(bytes);
+        }
+        return buffer.array();
+    }
+
     private byte[] forwardToNextNonEmptyBucket() {
+        assert workingBucket != null;
         byte[] bucket;
         for (bucket = workingBucket; offset >= bucket.length; bucket = buckets.get(++bucketIndex)) {
             offset = 0;

@@ -526,9 +526,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
         // 1. read all pending data from data log file
         try (LogReader reader = new LogReader(readLogChannel, true)) {
             while (true) {
-                List<byte[]> logOpt = reader.readLog();
-                if (!logOpt.isEmpty()) {
-                    final SerializedObjectWithId<byte[]> e = decodeObjectWithId(logOpt);
+                final CompositeBytesReader bytesReader = reader.readLog();
+                if (!bytesReader.isEmpty()) {
+                    final SerializedObjectWithId<byte[]> e = decodeObjectWithId(bytesReader);
                     if (recoveredMm == null) {
                         recoveredMm = new Memtable();
                     }
@@ -590,9 +590,9 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
         try (LogReader reader = new LogReader(ch, true)) {
             long id = lastCommittedId;
             while (true) {
-                List<byte[]> logOpt = reader.readLog();
-                if (!logOpt.isEmpty()) {
-                    id = Bits.getLong(compact(logOpt), 0);
+                final CompositeBytesReader bytesReader = reader.readLog();
+                if (!bytesReader.isEmpty()) {
+                    id = bytesReader.getLong();
                 } else {
                     break;
                 }
@@ -615,31 +615,23 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
     }
 
     private byte[] encodeObjectWithId(SerializedObjectWithId<byte[]> obj) {
-        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + obj.getSerializedObject().length);
-        buffer.putLong(obj.getId());
-        buffer.putInt(obj.getSerializedObject().length);
-        buffer.put(obj.getSerializedObject());
+        final byte[] buffer = new byte[Long.BYTES + Integer.BYTES + obj.getSerializedObject().length];
+        int offset = 0;
+        Bits.putLong(buffer, offset, obj.getId());
+        offset += 8;
+        Bits.putInt(buffer, offset, obj.getSerializedObject().length);
+        offset += 4;
+        Bits.putBytes(buffer, offset, obj.getSerializedObject());
 
-        return buffer.array();
+        return buffer;
     }
 
-    private SerializedObjectWithId<byte[]> decodeObjectWithId(List<byte[]> bytes) {
-        final ByteBuffer buffer = ByteBuffer.wrap(compact(bytes));
-        final long id = buffer.getLong();
-        final int length = buffer.getInt();
-        final byte[] bs = new byte[length];
-        buffer.get(bs);
+    private SerializedObjectWithId<byte[]> decodeObjectWithId(CompositeBytesReader reader) {
+        final long id = reader.getLong();
+        final int length = reader.getInt();
+        final byte[] bs = reader.getBytes(length);
 
         return new SerializedObjectWithId<>(id, bs);
-    }
-
-    private byte[] compact(List<byte[]> output) {
-        final int size = output.stream().mapToInt(b -> b.length).sum();
-        final ByteBuffer buffer = ByteBuffer.allocate(size);
-        for (byte[] bytes : output) {
-            buffer.put(bytes);
-        }
-        return buffer.array();
     }
 
     private List<SerializedObjectWithId<byte[]>> doFetch(long fromId, int limit) throws StorageException {

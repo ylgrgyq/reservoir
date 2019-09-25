@@ -88,9 +88,9 @@ final class Manifest {
         final List<SSTableFileMetaInfo> ms = new ArrayList<>();
         try (LogReader reader = new LogReader(manifestFile, true)) {
             while (true) {
-                final List<byte[]> logOpt = reader.readLog();
-                if (!logOpt.isEmpty()) {
-                    final ManifestRecord record = ManifestRecord.decode(logOpt);
+                final CompositeBytesReader bytesReader = reader.readLog();
+                if (!bytesReader.isEmpty()) {
+                    final ManifestRecord record = ManifestRecord.decode(bytesReader);
                     switch (record.getType()) {
                         case PLAIN:
                             nextFileNumber = record.getNextFileNumber();

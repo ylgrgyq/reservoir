@@ -82,47 +82,48 @@ final class ManifestRecord {
 
     byte[] encode() {
         final int sstableMetaInfoEncodeSize = Integer.BYTES + Long.BYTES * 3;
-        final ByteBuffer buffer = ByteBuffer.allocate(1 + metas.size() * sstableMetaInfoEncodeSize + Integer.BYTES * 4);
-        buffer.put(type.getCode());
-        buffer.putInt(nextFileNumber);
-        buffer.putInt(dataLogFileNumber);
-        buffer.putInt(consumerCommitLogFileNumber);
-        buffer.putInt(metas.size());
+        final byte[] buffer = new byte[1 + metas.size() * sstableMetaInfoEncodeSize + Integer.BYTES * 4];
+
+        int offset = 0;
+        Bits.putByte(buffer, offset, type.getCode());
+        offset += 1;
+        Bits.putInt(buffer, offset, nextFileNumber);
+        offset += 4;
+        Bits.putInt(buffer, offset, dataLogFileNumber);
+        offset += 4;
+        Bits.putInt(buffer, offset, consumerCommitLogFileNumber);
+        offset += 4;
+        Bits.putInt(buffer, offset, metas.size());
+        offset += 4;
 
         for (SSTableFileMetaInfo meta : metas) {
-            buffer.putLong(meta.getFileSize());
-            buffer.putInt(meta.getFileNumber());
-            buffer.putLong(meta.getFirstId());
-            buffer.putLong(meta.getLastId());
+            Bits.putLong(buffer, offset, meta.getFileSize());
+            offset += 8;
+            Bits.putInt(buffer, offset, meta.getFileNumber());
+            offset += 4;
+            Bits.putLong(buffer, offset, meta.getFirstId());
+            offset += 8;
+            Bits.putLong(buffer, offset, meta.getLastId());
+            offset += 8;
         }
 
-        return buffer.array();
+        return buffer;
     }
 
-    private static byte[] compact(List<byte[]> output) {
-        final int size = output.stream().mapToInt(b -> b.length).sum();
-        final ByteBuffer buffer = ByteBuffer.allocate(size);
-        for (byte[] bytes : output) {
-            buffer.put(bytes);
-        }
-        return buffer.array();
-    }
+    static ManifestRecord decode(CompositeBytesReader bytesReader) {
+        final ManifestRecord record = Type.newManifestRecord(bytesReader.get());
 
-    static ManifestRecord decode(List<byte[]> bytes) {
-        final ByteBuffer buffer = ByteBuffer.wrap(compact(bytes));
-        final ManifestRecord record = Type.newManifestRecord(buffer.get());
+        record.setNextFileNumber(bytesReader.getInt());
+        record.setDataLogFileNumber(bytesReader.getInt());
+        record.setConsumerCommitLogFileNumber(bytesReader.getInt());
 
-        record.setNextFileNumber(buffer.getInt());
-        record.setDataLogFileNumber(buffer.getInt());
-        record.setConsumerCommitLogFileNumber(buffer.getInt());
-
-        final int metasSize = buffer.getInt();
+        final int metasSize = bytesReader.getInt();
         for (int i = 0; i < metasSize; i++) {
             SSTableFileMetaInfo meta = new SSTableFileMetaInfo();
-            meta.setFileSize(buffer.getLong());
-            meta.setFileNumber(buffer.getInt());
-            meta.setFirstId(buffer.getLong());
-            meta.setLastId(buffer.getLong());
+            meta.setFileSize(bytesReader.getLong());
+            meta.setFileNumber(bytesReader.getInt());
+            meta.setFirstId(bytesReader.getLong());
+            meta.setLastId(bytesReader.getLong());
 
             record.addMeta(meta);
         }
