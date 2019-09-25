@@ -47,7 +47,7 @@ class CompositeBytesReader {
         final byte[] bs = new byte[length];
         for (int offsetInBs = 0; offsetInBs < length; ) {
             forwardToNextNonEmptyBucket();
-            int len = Math.min(length, workingBucket.length - offset);
+            final int len = Math.min(length, workingBucket.length - offset);
             System.arraycopy(workingBucket, offset, bs, offsetInBs, len);
             offsetInBs += len;
             offset += len;
