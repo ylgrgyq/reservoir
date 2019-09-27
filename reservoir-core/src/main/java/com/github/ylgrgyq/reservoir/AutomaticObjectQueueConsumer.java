@@ -193,7 +193,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
      * Remove a exists {@link ConsumeObjectListener} from this consumer.
      *
      * @param listener the target listener to remove
-     * @return <tt>true</tt> if this consumer contained the specified listener
+     * @return true if this consumer contained the specified listener
      */
     public boolean removeListener(ConsumeObjectListener<E> listener) {
         requireNonNull(listener, "listener");
