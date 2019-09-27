@@ -1,7 +1,7 @@
 # Reservoir
 
 [![Build Status](https://travis-ci.com/ylgrgyq/reservoir.svg?branch=master)](https://travis-ci.com/ylgrgyq/reservoir)
-[![Clojars Project](https://img.shields.io/clojars/v/com.github.ylgrgyq/reservoir.svg)](https://clojars.org/com.github.ylgrgyq/reservoir)
+![Maven Project](https://img.shields.io/maven-central/v/com.github.ylgrgyq/reservoir?color=green)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=com.github.ylgrgyq%3Areservoir&metric=coverage)](https://sonarcloud.io/dashboard?id=com.github.ylgrgyq%3Areservoir)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
