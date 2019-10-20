@@ -1,4 +1,4 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -5,6 +5,10 @@ import com.codahale.metrics.Timer.Context;
 import com.github.ylgrgyq.reservoir.FileUtils;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 import com.github.ylgrgyq.reservoir.StorageException;
+import com.github.ylgrgyq.reservoir.benchmark.BenchmarkTest;
+import com.github.ylgrgyq.reservoir.benchmark.BenchmarkTestReport;
+import com.github.ylgrgyq.reservoir.benchmark.DefaultBenchmarkReport;
+import com.github.ylgrgyq.reservoir.benchmark.TestingDataGenerator;
 
 import javax.annotation.Nullable;
 import java.io.File;

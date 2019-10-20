@@ -1,12 +1,12 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.github.ylgrgyq.reservoir.benchmark.storage.TestingUtils.makeStringInBytes;
+import static com.github.ylgrgyq.reservoir.benchmark.TestingUtils.makeStringInBytes;
 
-final class TestingDataGenerator {
-    static List<List<byte[]>> generate(int dataSize, int numOfBatches, int numOfDataPerBatch) {
+final public class TestingDataGenerator {
+    public static List<List<byte[]>> generate(int dataSize, int numOfBatches, int numOfDataPerBatch) {
         final List<List<byte[]>> testingData = new ArrayList<>();
 
         for (int i = 0; i < numOfBatches; i++) {

@@ -4,6 +4,7 @@ import com.github.ylgrgyq.reservoir.FileUtils;
 import com.github.ylgrgyq.reservoir.ObjectQueue;
 import com.github.ylgrgyq.reservoir.ObjectQueueBuilder;
 import com.github.ylgrgyq.reservoir.SerializedObjectWithId;
+import com.github.ylgrgyq.reservoir.benchmark.TestingUtils;
 import org.junit.Before;
 import org.junit.Test;
 

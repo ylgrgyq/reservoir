@@ -1,4 +1,4 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 public interface BenchmarkTest {
     default void setup() throws Exception {}

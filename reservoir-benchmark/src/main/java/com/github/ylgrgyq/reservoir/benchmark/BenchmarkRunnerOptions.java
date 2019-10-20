@@ -1,11 +1,11 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command()
-class BenchmarkRunnerOptions {
+public class BenchmarkRunnerOptions {
     @Option(names = {"-w", "--warm-up-times"},
             defaultValue = "5",
             description = "Warm-up testing times before the start of the official tests.")

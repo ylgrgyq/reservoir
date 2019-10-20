@@ -1,4 +1,4 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
@@ -10,7 +10,7 @@ public final class DefaultBenchmarkReport implements BenchmarkTestReport {
     private final long testTimeElapsed;
     private final Timer timer;
 
-    DefaultBenchmarkReport(long testTimeElapsed, Timer operationTimer) {
+    public DefaultBenchmarkReport(long testTimeElapsed, Timer operationTimer) {
         this.testTimeElapsed = testTimeElapsed;
         this.timer = operationTimer;
     }
