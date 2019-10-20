@@ -161,25 +161,24 @@ benchmark storage write [-h] [--sync-write-wal] [-c=<coolDownSecs>]
 
 Description:
 
-All the tests in this command is only used to test the write performance of the
-storage. During the test, no read operations will be issued. With the options
-of this command, you can test the storage in different working conditions.
+All the tests in this command is only used to test the writing performance of
+the storage. During the test, no read operations will be issued. With the
+options of this command, you can test the storage in different working
+conditions.
 
 Options:
   -h, --help             Show this help message and exit.
   -s, --data-size=<dataSize>
-                         Size in bytes of each data to write to storage.
+                         Size in bytes of each data to write.
                            Default: 100
   -p, --number-of-data-per-batch=<numberOfDataPerBatch>
-                         Number of data per batch to write to storage.
+                         Number of data per batch to write.
                            Default: 10
   -n, --number-of-batches=<numberOfBatches>
-                         Number of batches of data to write to storage for each
-                           tests.
+                         Number of batches of data to write for each tests.
                            Default: 10000
   -w, --warm-up-times=<warmUpTimes>
-                         Warm-up testing times before the start of the official
-                           tests.
+                         Warm-up times before the start of the official tests.
                            Default: 5
   -t, --testing-times=<testingTimes>
                          Official testing times after warm-up period.
@@ -209,10 +208,10 @@ benchmark storage read [-hS] [--sync-write-wal] [-c=<coolDownSecs>]
 
 Description:
 
-All the tests in this command is only used to test the read performance for the
-storage. During the test setup period, data for the read test will be written
-to storage. After that, no more write operations will be issued. With the
-options of this command, you can test the storage in different working
+All the tests in this command is only used to test the reading performance for
+the storage. During the test setup period, data for the read test will be
+written to storage. After that, no more write operations will be issued. With
+the options of this command, you can test the storage in different working
 conditions.
 
 Options:
@@ -226,10 +225,10 @@ Options:
   -n, --total-number-of-data-to-read=<numOfDataToRead>
                          Total number of data to read.
                            Default: 10000
-  -S, --random-read      Read data in random order.
+  -S, --random-read      Read data in random order, otherwise read will be in
+                           sequential order.
   -w, --warm-up-times=<warmUpTimes>
-                         Warm-up testing times before the start of the official
-                           tests.
+                         Warm-up times before the start of the official tests.
                            Default: 5
   -t, --testing-times=<testingTimes>
                          Official testing times after warm-up period.
@@ -238,7 +237,7 @@ Options:
                          Cool down interval in seconds between each tests.
                            Default: 5
       --sync-write-wal   Flush underlying WAL log in storage synchronously
-                           after every write.
+                           after every commit.
   -T, --storage-type=<storageType>
                          The underlying storage type used by this test. 
                            Default: FileStorage

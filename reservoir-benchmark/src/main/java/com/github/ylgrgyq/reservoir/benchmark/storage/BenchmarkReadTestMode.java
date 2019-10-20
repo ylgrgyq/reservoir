@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
         sortOptions = false,
         headerHeading = "Usage:%n%n",
         optionListHeading = "%nOptions:%n",
-        description = "All the tests in this command is only used to test the read performance " +
+        description = "All the tests in this command is only used to test the reading performance " +
                 "for the storage. During the test setup period, data for the read test will be written " +
                 "to storage. After that, no more write operations will be issued. With the options of this " +
                 "command, you can test the storage in different working conditions.",
@@ -49,7 +49,7 @@ public class BenchmarkReadTestMode implements Callable<Integer> {
 
     @Option(names = {"-S", "--random-read"},
             defaultValue = "false",
-            description = "Read data in random order.")
+            description = "Read data in random order, otherwise read will be in sequential order.")
     private boolean randomReadData;
 
     @Mixin
@@ -57,7 +57,7 @@ public class BenchmarkReadTestMode implements Callable<Integer> {
 
     @Option(names = {"--sync-write-wal"},
             defaultValue = "false",
-            description = "Flush underlying WAL log in storage synchronously after every write.")
+            description = "Flush underlying WAL log in storage synchronously after every commit.")
     private boolean syncWriteWalLog;
 
     @Option(names = {"-T", "--storage-type"},

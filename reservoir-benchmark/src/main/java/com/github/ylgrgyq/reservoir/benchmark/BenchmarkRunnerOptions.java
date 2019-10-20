@@ -8,7 +8,7 @@ import picocli.CommandLine.Option;
 public class BenchmarkRunnerOptions {
     @Option(names = {"-w", "--warm-up-times"},
             defaultValue = "5",
-            description = "Warm-up testing times before the start of the official tests.")
+            description = "Warm-up times before the start of the official tests.")
     private int warmUpTimes;
 
     @Option(names = {"-t", "--testing-times"},
