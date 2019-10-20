@@ -94,17 +94,17 @@ public class FileStorageBuilder {
     }
 
     /**
-     * After {@link FileStorage#store(List)}, forces updates on any internal file to be written to
+     * After {@link FileStorage#store(List)}, forces updates on internal WAL log file to be written to
      * the underlying storage device. This may cause a huge degradation on write performance.
      * But will reduce the probability of losing data after {@link FileStorage#store(List)} success.
      * <p>
      * The default value is false.
      *
-     * @param syncFlushDataLogWriter true to force flush stored data to internal file
+     * @param syncWriteWalLog true to force flush stored data to internal WAL log file
      * @return this
      */
-    public FileStorageBuilder syncFlushDataLogWriter(boolean syncFlushDataLogWriter) {
-        this.forceSyncOnFlushDataLogWriter = syncFlushDataLogWriter;
+    public FileStorageBuilder syncWriteWalLog(boolean syncWriteWalLog) {
+        this.forceSyncOnFlushDataLogWriter = syncWriteWalLog;
         return this;
     }
 

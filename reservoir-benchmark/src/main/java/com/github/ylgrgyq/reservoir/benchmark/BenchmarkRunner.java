@@ -1,14 +1,22 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 public final class BenchmarkRunner {
     private static final Logger logger = LoggerFactory.getLogger(BenchmarkRunner.class.getSimpleName());
 
-    private int warmUpTimes = 5;
-    private int testTimes = 5;
-    private long coolDownIntervalMillis = 5000;
+    private final int warmUpTimes;
+    private final int testTimes;
+    private final long coolDownIntervalMillis;
+
+    public BenchmarkRunner(BenchmarkRunnerOptions options) {
+        this.warmUpTimes = options.getWarmUpTimes();
+        this.testTimes = options.getTestingTimes();
+        this.coolDownIntervalMillis = TimeUnit.SECONDS.toMillis(options.getCoolDownSecs());
+    }
 
     public void runTest(BenchmarkTest test) throws Exception {
         logger.info("\nEnvironment spec:\n{}\n", EnvironmentInfo.generateEnvironmentSpec());
@@ -16,7 +24,8 @@ public final class BenchmarkRunner {
         logger.info("Warm up for {} times.", warmUpTimes);
         doTest(test, warmUpTimes);
 
-        logger.info("Test for {} times.", testTimes);
+        logger.info("\n\n---------------------------------- Official test for {} times. ----------------------------------\n",
+                testTimes);
         doTest(test, testTimes);
     }
 

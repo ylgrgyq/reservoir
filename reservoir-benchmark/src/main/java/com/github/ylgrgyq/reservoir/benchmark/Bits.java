@@ -22,7 +22,7 @@
  *
  *
  */
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 /**
  * Internal use only, may change in the future.

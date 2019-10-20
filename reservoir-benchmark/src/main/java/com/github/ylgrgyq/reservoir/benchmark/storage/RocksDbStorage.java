@@ -3,6 +3,7 @@ package com.github.ylgrgyq.reservoir.benchmark.storage;
 import com.github.ylgrgyq.reservoir.NamedThreadFactory;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 import com.github.ylgrgyq.reservoir.SerializedObjectWithId;
+import com.github.ylgrgyq.reservoir.benchmark.Bits;
 import org.rocksdb.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

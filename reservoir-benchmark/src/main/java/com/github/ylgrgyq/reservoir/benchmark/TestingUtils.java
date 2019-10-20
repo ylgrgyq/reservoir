@@ -1,4 +1,4 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Random;

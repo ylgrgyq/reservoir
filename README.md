@@ -140,6 +140,110 @@ When you are done with `AutomaticObjectQueueConsumer`, you need to close it. It 
 consumer.close();
 ```
 
+# Benchmark
+
+We provide a easy to use (I think) benchmark tool to test the performance of Reservoir in your local environment. Currently, the benchmark tool only covers the storage performance, but it's the major and the most time consuming part of Reservoir. 
+
+Firstly, please navigate to the path: `./reservoir-benchmark/`. 
+
+For benchmark on write operation, please use `./bin/benchmark storage write` command with options you like after checking the help command:
+
+```
+./bin/benchmark storage write -h
+Usage:
+
+Test the writing performance of the storage.
+
+benchmark storage write [-h] [--sync-write-wal] [-c=<coolDownSecs>]
+                        [-n=<numberOfBatches>] [-p=<numberOfDataPerBatch>]
+                        [-s=<dataSize>] [-t=<testingTimes>] [-T=<storageType>]
+                        [-w=<warmUpTimes>]
+
+Description:
+
+All the tests in this command is only used to test the write performance of the
+storage. During the test, no read operations will be issued. With the options
+of this command, you can test the storage in different working conditions.
+
+Options:
+  -h, --help             Show this help message and exit.
+  -s, --data-size=<dataSize>
+                         Size in bytes of each data to write to storage.
+                           Default: 100
+  -p, --number-of-data-per-batch=<numberOfDataPerBatch>
+                         Number of data per batch to write to storage.
+                           Default: 10
+  -n, --number-of-batches=<numberOfBatches>
+                         Number of batches of data to write to storage for each
+                           tests.
+                           Default: 10000
+  -w, --warm-up-times=<warmUpTimes>
+                         Warm-up testing times before the start of the official
+                           tests.
+                           Default: 5
+  -t, --testing-times=<testingTimes>
+                         Official testing times after warm-up period.
+                           Default: 3
+  -c, --cool-down-interval-secs=<coolDownSecs>
+                         Cool down interval in seconds between each tests.
+                           Default: 5
+      --sync-write-wal   Flush underlying WAL log in storage synchronously
+                           after every write.
+  -T, --storage-type=<storageType>
+                         The underlying storage type used by this test. 
+                           Default: FileStorage
+```
+
+For benchmark on read operation, please use `./bin/benchmark storage read` command with options you like after checking the help command:                             
+
+```
+./bin/benchmark storage read -h 
+Usage:
+
+Test the reading performance of the storage.
+
+benchmark storage read [-hS] [--sync-write-wal] [-c=<coolDownSecs>]
+                       [-n=<numOfDataToRead>] [-p=<readBatchSize>]
+                       [-s=<dataSize>] [-t=<testingTimes>] [-T=<storageType>]
+                       [-w=<warmUpTimes>]
+
+Description:
+
+All the tests in this command is only used to test the read performance for the
+storage. During the test setup period, data for the read test will be written
+to storage. After that, no more write operations will be issued. With the
+options of this command, you can test the storage in different working
+conditions.
+
+Options:
+  -h, --help             Show this help message and exit.
+  -s, --data-size=<dataSize>
+                         Size in bytes of each data.
+                           Default: 100
+  -p, --number-of-data-per-read=<readBatchSize>
+                         Number of data to retrieve in one read.
+                           Default: 10
+  -n, --total-number-of-data-to-read=<numOfDataToRead>
+                         Total number of data to read.
+                           Default: 10000
+  -S, --random-read      Read data in random order.
+  -w, --warm-up-times=<warmUpTimes>
+                         Warm-up testing times before the start of the official
+                           tests.
+                           Default: 5
+  -t, --testing-times=<testingTimes>
+                         Official testing times after warm-up period.
+                           Default: 3
+  -c, --cool-down-interval-secs=<coolDownSecs>
+                         Cool down interval in seconds between each tests.
+                           Default: 5
+      --sync-write-wal   Flush underlying WAL log in storage synchronously
+                           after every write.
+  -T, --storage-type=<storageType>
+                         The underlying storage type used by this test. 
+                           Default: FileStorage
+```
+
 # License
 
 Copyright 2019 Rui Guo. Released under the [MIT License](https://github.com/ylgrgyq/reservoir/blob/master/LICENSE.md).
