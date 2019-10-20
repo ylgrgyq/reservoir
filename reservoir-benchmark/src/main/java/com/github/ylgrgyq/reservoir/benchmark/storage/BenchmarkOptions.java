@@ -5,7 +5,8 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
 
-@Command(name = "benchmark", synopsisSubcommandLabel = "COMMAND",
+@Command(name = "benchmark",
+        synopsisSubcommandLabel = "COMMAND",
         version = "Reservoir benchmark tool v1.4-SNAPSHOT",
         description = "This is a dedicated benchmark testing tool for Reservoir. With this " +
                 "tool you can challenge Reservoir under different working conditions like " +
@@ -17,7 +18,7 @@ import picocli.CommandLine.Spec;
 
 public class BenchmarkOptions implements Runnable {
     @Spec
-    CommandSpec spec;
+    private CommandSpec spec;
 
     @Override
     public void run() {

@@ -8,6 +8,7 @@ import picocli.CommandLine.Spec;
 import java.util.concurrent.Callable;
 
 @Command(name = "write",
+        showDefaultValues = true,
         sortOptions = false,
         headerHeading = "Usage:%n%n",
         optionListHeading = "%nOptions:%n",
@@ -19,25 +20,53 @@ import java.util.concurrent.Callable;
 )
 public class BenchmarkWriteTestMode implements Callable<Integer> {
     @Spec
-    CommandSpec spec;
+    private CommandSpec spec;
 
-    @Option(names = {"-s", "--data-size"}, description = "Size in bytes for each data to store")
-    int dataSize;
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "Show this help message and exit.")
+    private boolean usageHelpRequested;
 
-    @Option(names = {"-p", "--data-per-batch"}, description = "Number of data per batch")
-    int dataPerBatch;
+    @Option(names = {"-s", "--data-size"},
+            defaultValue = "100",
+            description = "Size in bytes for each data to store.")
+    private int dataSize;
 
-    @Option(names = {"-n", "--batches"}, description = "Number of batches")
-    int batches;
+    @Option(names = {"-p", "--data-per-batch"},
+            defaultValue = "10",
+            description = "Number of data per batch.")
+    private int dataPerBatch;
 
-    @Option(names = {"-t", "--storage-type"}, description = "Storage type")
-    String storageType;
+    @Option(names = {"-n", "--batches"},
+            defaultValue = "10000",
+            description = "Number of batches.")
+    private int batches;
+
+    @Option(names = {"-t", "--storage-type"},
+            defaultValue = "FileStorage",
+            description = "Storage type, valid values: ${COMPLETION-CANDIDATES}.")
+    private StorageType storageType;
 
     @Override
     public Integer call() throws Exception {
-        System.out.println("data size:" + dataSize + " data per batch:" + dataPerBatch +
-                " batches=" + batches + " storage type:" + storageType);
-        spec.commandLine().usage(System.out);
+        if (usageHelpRequested) {
+            spec.commandLine().usage(System.out);
+            return 0;
+        }
+
+        final BenchmarkTest test;
+        if (storageType == StorageType.RocksDBStorage) {
+            test = new RocksDbStorageStoreBench(dataSize, dataPerBatch, batches);
+        } else {
+            test = new FileStorageStoreBench(dataSize, dataPerBatch, batches);
+        }
+
+        final BenchmarkRunner runner = new BenchmarkRunner();
+        runner.runTest(test);
+
         return 0;
+    }
+
+    private enum StorageType {
+        RocksDBStorage,
+        FileStorage
     }
 }
