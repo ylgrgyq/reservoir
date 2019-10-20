@@ -15,7 +15,6 @@ import picocli.CommandLine.Spec;
         commandListHeading = "%nCommands:%n%nThe most commonly used testing commands are:%n",
         mixinStandardHelpOptions = true,
         subcommands = {BenchmarkWriteTestMode.class})
-
 public class BenchmarkOptions implements Runnable {
     @Spec
     private CommandSpec spec;
