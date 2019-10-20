@@ -17,12 +17,12 @@ import java.util.concurrent.Callable;
         headerHeading = "Usage:%n%n",
         optionListHeading = "%nOptions:%n",
         description = "All the tests in this command is only used to test the write performance " +
-                "for Reservoir. During the test, no read operations will be issued. With the options of this " +
-                "command, you can test Reservoir in different working conditions.",
+                "of the storage. During the test, no read operations will be issued. With the options of this " +
+                "command, you can test the storage in different working conditions.",
         synopsisHeading = "%n",
         descriptionHeading = "%nDescription:%n%n",
         parameterListHeading = "%nParameters:%n",
-        header = "Test the writing performance of Reservoir."
+        header = "Test the writing performance of the storage."
 )
 public class BenchmarkWriteTestMode implements Callable<Integer> {
     @Spec
@@ -33,17 +33,17 @@ public class BenchmarkWriteTestMode implements Callable<Integer> {
 
     @Option(names = {"-s", "--data-size"},
             defaultValue = "100",
-            description = "Size in bytes of each data to write to Reservoir.")
+            description = "Size in bytes of each data to write to storage.")
     private int dataSize;
 
     @Option(names = {"-p", "--number-of-data-per-batch"},
             defaultValue = "10",
-            description = "Number of data per batch to write to Reservoir.")
+            description = "Number of data per batch to write to storage.")
     private int numberOfDataPerBatch;
 
     @Option(names = {"-n", "--number-of-batches"},
             defaultValue = "10000",
-            description = "Number of batches of data to write to Reservoir for each tests.")
+            description = "Number of batches of data to write to storage for each tests.")
     private int numberOfBatches;
 
     @Mixin

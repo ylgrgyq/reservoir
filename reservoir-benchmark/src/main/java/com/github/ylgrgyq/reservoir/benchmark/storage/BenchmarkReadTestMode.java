@@ -17,13 +17,13 @@ import java.util.concurrent.Callable;
         headerHeading = "Usage:%n%n",
         optionListHeading = "%nOptions:%n",
         description = "All the tests in this command is only used to test the read performance " +
-                "for Reservoir. During the test setup period, data for the read test will be written " +
+                "for the storage. During the test setup period, data for the read test will be written " +
                 "to storage. After that, no more write operations will be issued. With the options of this " +
-                "command, you can test Reservoir in different working conditions.",
+                "command, you can test the storage in different working conditions.",
         synopsisHeading = "%n",
         descriptionHeading = "%nDescription:%n%n",
         parameterListHeading = "%nParameters:%n",
-        header = "Test the reading performance of Reservoir."
+        header = "Test the reading performance of the storage."
 )
 public class BenchmarkReadTestMode implements Callable<Integer> {
     @Spec

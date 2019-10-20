@@ -1,5 +1,6 @@
-package com.github.ylgrgyq.reservoir.benchmark.storage;
+package com.github.ylgrgyq.reservoir.benchmark;
 
+import com.github.ylgrgyq.reservoir.benchmark.storage.StorageBenchmarkOptions;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParameterException;
@@ -12,9 +13,9 @@ import picocli.CommandLine.Spec;
                 "tool you can challenge Reservoir under different working conditions like " +
                 "different write size, different read size, different buffering mechanism, etc. Please " +
                 "use it on your own machine to know if Reservoir meets your performance requirements.",
-        commandListHeading = "%nCommands:%n%nThe most commonly used testing commands are:%n",
+        commandListHeading = "%nCommands:%n%nThe testing commands are:%n",
         mixinStandardHelpOptions = true,
-        subcommands = {BenchmarkWriteTestMode.class, BenchmarkReadTestMode.class})
+        subcommands = {StorageBenchmarkOptions.class})
 public class BenchmarkOptions implements Runnable {
     @Spec
     private CommandSpec spec;
