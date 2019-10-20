@@ -11,7 +11,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class StorageStoreBenchmark implements BenchmarkTest {
+abstract class StorageWriteBenchmark implements BenchmarkTest {
     private final int numBatches;
     private final int dataSize;
     private final int numDataPerBatch;
@@ -22,7 +22,7 @@ abstract class StorageStoreBenchmark implements BenchmarkTest {
     @Nullable
     private Timer timer;
 
-    StorageStoreBenchmark(int dataSize, int numDataPerBatch, int numBatches) {
+    StorageWriteBenchmark(int dataSize, int numDataPerBatch, int numBatches) {
         this.dataSize = dataSize;
         this.numBatches = numBatches;
         this.numDataPerBatch = numDataPerBatch;
@@ -37,7 +37,7 @@ abstract class StorageStoreBenchmark implements BenchmarkTest {
     @Override
     public void setup() throws Exception {
         // Use new storage and timer every time to prevent interference between each test
-        final String tempDir = baseDir + File.separator + "test_only_store" + System.nanoTime();
+        final String tempDir = baseDir + File.separator + "test_only_write" + System.nanoTime();
         final File tempFile = new File(tempDir);
         FileUtils.forceMkdir(tempFile);
         storage = createStorage(tempFile.getPath());

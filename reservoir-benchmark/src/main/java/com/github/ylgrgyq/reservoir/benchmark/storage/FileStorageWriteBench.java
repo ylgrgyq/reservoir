@@ -3,14 +3,14 @@ package com.github.ylgrgyq.reservoir.benchmark.storage;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 import com.github.ylgrgyq.reservoir.storage.FileStorageBuilder;
 
-public final class FileStorageStoreBench extends StorageStoreBenchmark {
-    FileStorageStoreBench(int dataSize, int numDataPerBatch, int numBatches) {
+public final class FileStorageWriteBench extends StorageWriteBenchmark {
+    FileStorageWriteBench(int dataSize, int numDataPerBatch, int numBatches) {
         super(dataSize, numDataPerBatch, numBatches);
     }
 
     @Override
     public String getTestDescription() {
-        return "Store data to FileStorage test";
+        return "Write data to FileStorage test";
     }
 
     @Override

@@ -60,9 +60,9 @@ public class BenchmarkWriteTestMode implements Callable<Integer> {
 
         final BenchmarkTest test;
         if (storageType == StorageType.RocksDBStorage) {
-            test = new RocksDbStorageStoreBench(dataSize, dataPerBatch, batches);
+            test = new RocksDbStorageWriteBench(dataSize, dataPerBatch, batches);
         } else {
-            test = new FileStorageStoreBench(dataSize, dataPerBatch, batches);
+            test = new FileStorageWriteBench(dataSize, dataPerBatch, batches);
         }
 
         final BenchmarkRunner runner = new BenchmarkRunner(runnerOptions);

@@ -2,8 +2,8 @@ package com.github.ylgrgyq.reservoir.benchmark.storage;
 
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 
-public final class RocksDbStorageStoreBench extends StorageStoreBenchmark {
-    RocksDbStorageStoreBench(int dataSize, int numDataPerBatch, int numBatches) {
+public final class RocksDbStorageWriteBench extends StorageWriteBenchmark {
+    RocksDbStorageWriteBench(int dataSize, int numDataPerBatch, int numBatches) {
         super(dataSize, numDataPerBatch, numBatches);
     }
 
@@ -14,6 +14,6 @@ public final class RocksDbStorageStoreBench extends StorageStoreBenchmark {
 
     @Override
     public String getTestDescription() {
-        return "Store data to RocksDbStorage test";
+        return "Write data to RocksDbStorage test";
     }
 }
