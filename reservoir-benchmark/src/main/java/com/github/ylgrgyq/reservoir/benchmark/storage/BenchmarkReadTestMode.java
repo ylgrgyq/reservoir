@@ -47,6 +47,11 @@ public class BenchmarkReadTestMode implements Callable<Integer> {
             description = "Total number of data to read.")
     private int numOfDataToRead;
 
+    @Option(names = {"-S", "--random-read"},
+            defaultValue = "false",
+            description = "Read data in random order.")
+    private boolean randomReadData;
+
     @Mixin
     private BenchmarkRunnerOptions runnerOptions;
 
@@ -69,9 +74,9 @@ public class BenchmarkReadTestMode implements Callable<Integer> {
 
         final BenchmarkTest test;
         if (storageType == StorageType.RocksDBStorage) {
-            test = new RocksDbStorageReadBench(dataSize, readBatchSize, numOfDataToRead);
+            test = new RocksDbStorageReadBench(dataSize, readBatchSize, numOfDataToRead, randomReadData);
         } else {
-            test = new FileStorageReadBench(dataSize, readBatchSize, numOfDataToRead, syncWriteWalLog);
+            test = new FileStorageReadBench(dataSize, readBatchSize, numOfDataToRead, syncWriteWalLog, randomReadData);
         }
 
         final BenchmarkRunner runner = new BenchmarkRunner(runnerOptions);

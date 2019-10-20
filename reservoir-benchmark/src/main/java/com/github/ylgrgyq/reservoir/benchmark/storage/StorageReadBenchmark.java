@@ -15,28 +15,49 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 abstract class StorageReadBenchmark implements BenchmarkTest {
+    // We prepare twice the size of numOfDataToRead data in storage to have
+    // a larger range for testing random read.
+    private static final int DEFAULT_NUM_OF_DATA_PER_BATCH = 2;
+
     private final int readBatchSize;
     private final int dataSize;
     private final int numOfDataToRead;
     private final List<List<byte[]>> testingData;
     private final String baseDir;
+    private final List<Long> readFromIds;
     @Nullable
     private ObjectQueueStorage<byte[]> storage;
     @Nullable
     private Timer timer;
 
-    StorageReadBenchmark(int dataSize, int readBatchSize, int numOfDataToRead) {
+    StorageReadBenchmark(int dataSize, int readBatchSize, int numOfDataToRead, boolean randomReadData) {
         this.dataSize = dataSize;
         this.readBatchSize = readBatchSize;
         this.numOfDataToRead = numOfDataToRead;
-        this.testingData = new ArrayList<>(TestingDataGenerator.generate(dataSize, numOfDataToRead, 2));
+        this.testingData = new ArrayList<>(TestingDataGenerator.generate(dataSize, numOfDataToRead, DEFAULT_NUM_OF_DATA_PER_BATCH));
 
         final String tempDir = System.getProperty("java.io.tmpdir", "/tmp") +
                 File.separator + "reservoir_benchmark_" + System.nanoTime();
         final File tempFile = new File(tempDir);
         this.baseDir = tempFile.getPath();
+
+        final int expectReadTimes = numOfDataToRead / readBatchSize;
+        readFromIds = new ArrayList<>(expectReadTimes);
+        if (randomReadData) {
+            final long maxFromId = DEFAULT_NUM_OF_DATA_PER_BATCH * numOfDataToRead - readBatchSize - 1;
+
+            for (int i = 0; i < expectReadTimes; i++) {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                readFromIds.add(random.nextLong(maxFromId));
+            }
+        } else {
+            for (long i = 0; i < numOfDataToRead; i += readBatchSize) {
+                readFromIds.add(i);
+            }
+        }
     }
 
     @Override
@@ -73,19 +94,22 @@ abstract class StorageReadBenchmark implements BenchmarkTest {
         assert timer != null;
         assert storage != null;
         final long start = System.nanoTime();
-        long lastId = 0;
         int totalDataRead = 0;
-        while (totalDataRead < numOfDataToRead) {
+        for (Long id : readFromIds) {
             final Context cxt = timer.time();
             try {
-                List<SerializedObjectWithId<byte[]>> data = storage.fetch(lastId, readBatchSize);
-                lastId = data.get(data.size() - 1).getId();
+                List<SerializedObjectWithId<byte[]>> data = storage.fetch(id, readBatchSize);
                 totalDataRead += data.size();
             } catch (InterruptedException ex) {
                 throw new StorageException("test was interrupted unexpectedly", ex);
             } finally {
                 cxt.stop();
             }
+        }
+
+        if (totalDataRead != numOfDataToRead) {
+            throw new RuntimeException(String.format("Testing invariant failed. " +
+                    "expectNumOfDataToRead: %s, actual: %s", numOfDataToRead, totalDataRead));
         }
 
         return new DefaultBenchmarkReport(System.nanoTime() - start, timer);

@@ -3,8 +3,8 @@ package com.github.ylgrgyq.reservoir.benchmark.storage;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 
 public final class RocksDbStorageReadBench extends StorageReadBenchmark {
-    RocksDbStorageReadBench(int dataSize, int readBatchSize, int numOfDataToRead) {
-        super(dataSize, readBatchSize, numOfDataToRead);
+    RocksDbStorageReadBench(int dataSize, int readBatchSize, int numOfDataToRead, boolean randomReadData) {
+        super(dataSize, readBatchSize, numOfDataToRead, randomReadData);
     }
 
     @Override

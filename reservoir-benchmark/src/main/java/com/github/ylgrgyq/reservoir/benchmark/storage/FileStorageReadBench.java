@@ -6,8 +6,8 @@ import com.github.ylgrgyq.reservoir.storage.FileStorageBuilder;
 public final class FileStorageReadBench extends StorageReadBenchmark {
     private final boolean syncWriteWalLog;
 
-    FileStorageReadBench(int dataSize, int readBatchSize, int numOfDataToRead, boolean syncWriteWalLog) {
-        super(dataSize, readBatchSize, numOfDataToRead);
+    FileStorageReadBench(int dataSize, int readBatchSize, int numOfDataToRead, boolean syncWriteWalLog, boolean randomReadData) {
+        super(dataSize, readBatchSize, numOfDataToRead, randomReadData);
         this.syncWriteWalLog = syncWriteWalLog;
     }
 
