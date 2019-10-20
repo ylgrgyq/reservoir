@@ -24,7 +24,8 @@ public final class BenchmarkRunner {
         logger.info("Warm up for {} times.", warmUpTimes);
         doTest(test, warmUpTimes);
 
-        logger.info("Test for {} times.", testTimes);
+        logger.info("\n\n---------------------------------- Official test for {} times. ----------------------------------\n",
+                testTimes);
         doTest(test, testTimes);
     }
 

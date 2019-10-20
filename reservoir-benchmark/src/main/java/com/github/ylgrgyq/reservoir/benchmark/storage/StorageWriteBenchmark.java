@@ -58,7 +58,7 @@ abstract class StorageWriteBenchmark implements BenchmarkTest {
     public String testingSpec() {
         return "description: " + getTestDescription() + "\n" +
                 "storage path: " + baseDir + "\n" +
-                "size in bytes for each data: " + dataSize + "\n" +
+                "size in bytes for each data to write: " + dataSize + "\n" +
                 "number of data per batch: " + numOfDataPerBatch + "\n" +
                 "number of batches: " + numOfBatches;
     }
