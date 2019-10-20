@@ -14,7 +14,7 @@ import picocli.CommandLine.Spec;
                 "use it on your own machine to know if Reservoir meets your performance requirements.",
         commandListHeading = "%nCommands:%n%nThe most commonly used testing commands are:%n",
         mixinStandardHelpOptions = true,
-        subcommands = {BenchmarkWriteTestMode.class})
+        subcommands = {BenchmarkWriteTestMode.class, BenchmarkReadTestMode.class})
 public class BenchmarkOptions implements Runnable {
     @Spec
     private CommandSpec spec;

@@ -3,24 +3,24 @@ package com.github.ylgrgyq.reservoir.benchmark.storage;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
 import com.github.ylgrgyq.reservoir.storage.FileStorageBuilder;
 
-public final class FileStorageWriteBench extends StorageWriteBenchmark {
+public final class FileStorageReadBench extends StorageReadBenchmark {
     private final boolean syncWriteWalLog;
 
-    FileStorageWriteBench(int dataSize, int numOfDataPerBatch, int numOfBatches, boolean syncWriteWalLog) {
-        super(dataSize, numOfDataPerBatch, numOfBatches);
+    FileStorageReadBench(int dataSize, int readBatchSize, int numOfDataToRead, boolean syncWriteWalLog) {
+        super(dataSize, readBatchSize, numOfDataToRead);
         this.syncWriteWalLog = syncWriteWalLog;
     }
 
     @Override
     public String getTestDescription() {
-        return "Write data to FileStorage test";
+        return "Read data from FileStorage test.";
     }
 
     @Override
     ObjectQueueStorage<byte[]> createStorage(String baseDir) throws Exception {
         return FileStorageBuilder
                 .newBuilder(baseDir)
-                .syncWriteWalLog(syncWriteWalLog)
+                .syncFlushConsumerCommitLogWriter(syncWriteWalLog)
                 .build();
     }
 }

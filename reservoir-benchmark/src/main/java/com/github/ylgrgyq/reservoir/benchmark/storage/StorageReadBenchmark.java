@@ -4,6 +4,7 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.ylgrgyq.reservoir.FileUtils;
 import com.github.ylgrgyq.reservoir.ObjectQueueStorage;
+import com.github.ylgrgyq.reservoir.SerializedObjectWithId;
 import com.github.ylgrgyq.reservoir.StorageException;
 
 import javax.annotation.Nullable;
@@ -11,10 +12,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class StorageWriteBenchmark implements BenchmarkTest {
-    private final int numOfBatches;
+abstract class StorageReadBenchmark implements BenchmarkTest {
+    private final int readBatchSize;
     private final int dataSize;
-    private final int numOfDataPerBatch;
+    private final int numOfDataToRead;
     private final List<List<byte[]>> testingData;
     private final String baseDir;
     @Nullable
@@ -22,11 +23,11 @@ abstract class StorageWriteBenchmark implements BenchmarkTest {
     @Nullable
     private Timer timer;
 
-    StorageWriteBenchmark(int dataSize, int numOfDataPerBatch, int numOfBatches) {
+    StorageReadBenchmark(int dataSize, int readBatchSize, int numOfDataToRead) {
         this.dataSize = dataSize;
-        this.numOfBatches = numOfBatches;
-        this.numOfDataPerBatch = numOfDataPerBatch;
-        this.testingData = new ArrayList<>(TestingDataGenerator.generate(dataSize, numOfBatches, numOfDataPerBatch));
+        this.readBatchSize = readBatchSize;
+        this.numOfDataToRead = numOfDataToRead;
+        this.testingData = new ArrayList<>(TestingDataGenerator.generate(dataSize, numOfDataToRead, 2));
 
         final String tempDir = System.getProperty("java.io.tmpdir", "/tmp") +
                 File.separator + "reservoir_benchmark_" + System.nanoTime();
@@ -37,11 +38,15 @@ abstract class StorageWriteBenchmark implements BenchmarkTest {
     @Override
     public void setup() throws Exception {
         // Use new storage and timer every time to prevent interference between each test
-        final String tempDir = baseDir + File.separator + "test_only_write" + System.nanoTime();
+        final String tempDir = baseDir + File.separator + "test_only_read" + System.nanoTime();
         final File tempFile = new File(tempDir);
         FileUtils.forceMkdir(tempFile);
         storage = createStorage(tempFile.getPath());
         timer = new Timer();
+
+        for (List<byte[]> data : testingData) {
+            storage.store(data);
+        }
     }
 
     @Override
@@ -55,8 +60,8 @@ abstract class StorageWriteBenchmark implements BenchmarkTest {
         return "description: " + getTestDescription() + "\n" +
                 "storage path: " + baseDir + "\n" +
                 "size in bytes for each data: " + dataSize + "\n" +
-                "number of data per batch: " + numOfDataPerBatch + "\n" +
-                "number of batches: " + numOfBatches;
+                "number of data per read: " + readBatchSize + "\n" +
+                "total number of data to read: " + numOfDataToRead;
     }
 
     @Override
@@ -64,10 +69,16 @@ abstract class StorageWriteBenchmark implements BenchmarkTest {
         assert timer != null;
         assert storage != null;
         final long start = System.nanoTime();
-        for (List<byte[]> data : testingData) {
+        long lastId = 0;
+        int totalDataRead = 0;
+        while (totalDataRead < numOfDataToRead) {
             final Context cxt = timer.time();
             try {
-                storage.store(data);
+                List<SerializedObjectWithId<byte[]>> data = storage.fetch(lastId, readBatchSize);
+                lastId = data.get(data.size() - 1).getId();
+                totalDataRead += data.size();
+            } catch (InterruptedException ex) {
+                throw new StorageException("test was interrupted unexpectedly", ex);
             } finally {
                 cxt.stop();
             }

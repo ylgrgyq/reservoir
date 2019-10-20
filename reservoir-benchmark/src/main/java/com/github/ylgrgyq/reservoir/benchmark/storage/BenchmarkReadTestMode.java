@@ -8,20 +8,21 @@ import picocli.CommandLine.Spec;
 
 import java.util.concurrent.Callable;
 
-@Command(name = "write",
+@Command(name = "read",
         showDefaultValues = true,
         sortOptions = false,
         headerHeading = "Usage:%n%n",
         optionListHeading = "%nOptions:%n",
-        description = "All the tests in this command is only used to test the write performance " +
-                "for Reservoir. During the test, no read operations will be issued. With the options of this " +
+        description = "All the tests in this command is only used to test the read performance " +
+                "for Reservoir. During the test setup period, data for the read test will be written " +
+                "to storage. After that, no more write operations will be issued. With the options of this " +
                 "command, you can test Reservoir in different working conditions.",
         synopsisHeading = "%n",
         descriptionHeading = "%nDescription:%n%n",
         parameterListHeading = "%nParameters:%n",
-        header = "Test the writing performance of Reservoir."
+        header = "Test the reading performance of Reservoir."
 )
-public class BenchmarkWriteTestMode implements Callable<Integer> {
+public class BenchmarkReadTestMode implements Callable<Integer> {
     @Spec
     private CommandSpec spec;
 
@@ -30,18 +31,18 @@ public class BenchmarkWriteTestMode implements Callable<Integer> {
 
     @Option(names = {"-s", "--data-size"},
             defaultValue = "100",
-            description = "Size in bytes of each data to write to Reservoir.")
+            description = "Size in bytes of each data.")
     private int dataSize;
 
-    @Option(names = {"-p", "--number-of-data-per-batch"},
+    @Option(names = {"-p", "--number-of-data-per-read"},
             defaultValue = "10",
-            description = "Number of data per batch to write to Reservoir.")
-    private int numberOfDataPerBatch;
+            description = "Number of data to retrieve in one read.")
+    private int readBatchSize;
 
-    @Option(names = {"-n", "--number-of-batches"},
+    @Option(names = {"-n", "--total-number-of-data-to-read"},
             defaultValue = "10000",
-            description = "Number of batches of data to write to Reservoir for each tests.")
-    private int numberOfBatches;
+            description = "Total number of data to read.")
+    private int numOfDataToRead;
 
     @Mixin
     private BenchmarkRunnerOptions runnerOptions;
@@ -65,9 +66,9 @@ public class BenchmarkWriteTestMode implements Callable<Integer> {
 
         final BenchmarkTest test;
         if (storageType == StorageType.RocksDBStorage) {
-            test = new RocksDbStorageWriteBench(dataSize, numberOfDataPerBatch, numberOfBatches);
+            test = new RocksDbStorageReadBench(dataSize, readBatchSize, numOfDataToRead);
         } else {
-            test = new FileStorageWriteBench(dataSize, numberOfDataPerBatch, numberOfBatches, syncWriteWalLog);
+            test = new FileStorageReadBench(dataSize, readBatchSize, numOfDataToRead, syncWriteWalLog);
         }
 
         final BenchmarkRunner runner = new BenchmarkRunner(runnerOptions);
