@@ -93,11 +93,11 @@ public final class ObjectQueueBuilder<E, S> {
 
     /**
      * Used only by {@link ObjectQueueConsumer}.
-     * Commit the object retrieved by calling {@link ObjectQueueConsumer#fetch()} and
+     * Commit the object retrieved by calling {@link ObjectQueueConsumer#fetch()} or
      * {@link ObjectQueueConsumer#fetch(long, TimeUnit)} automatically.
      * Calling {@link ObjectQueueConsumer#commit()} will have no effect with this set.
      *
-     * @param autoCommit true to auto commit any object retrieved by {@link ObjectQueueConsumer}
+     * @param autoCommit true to auto commit any object when it is retrieved from {@link ObjectQueueConsumer}
      * @return this
      */
     public ObjectQueueBuilder<E, S> autoCommitAfterFetch(boolean autoCommit) {
@@ -152,13 +152,15 @@ public final class ObjectQueueBuilder<E, S> {
      * {@link ObjectQueueProducer#produce(Object)}.
      * <p>
      * Please remember to shutdown the input {@code producerExecutorService} when no one use it.
+     * The created {@link ObjectQueueProducer} will not shutdown this
+     * {@code producerExecutorService} when producer closed.
      *
-     * @param executorService an instance of {@link ExecutorService}
+     * @param producerExecutorService an instance of {@link ExecutorService}
      */
-    public void setProducerExecutorService(ExecutorService executorService) {
-        requireNonNull(executorService, "producerExecutorService");
+    public void setProducerExecutorService(ExecutorService producerExecutorService) {
+        requireNonNull(producerExecutorService, "producerExecutorService");
 
-        this.producerExecutorService = executorService;
+        this.producerExecutorService = producerExecutorService;
         this.shutdownProducerExecutorService = false;
     }
 

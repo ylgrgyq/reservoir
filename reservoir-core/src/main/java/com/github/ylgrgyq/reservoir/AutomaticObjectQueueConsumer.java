@@ -137,7 +137,8 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
      * @param consumer         the delegated consumer
      * @param handler          the handler for the consumed object from the delegated consumer
      * @param listenerExecutor the executor used to call {@link ConsumeObjectListener}s, please
-     *                         close it after this consumer is closed
+     *                         remember to close it after this consumer is closed. The created
+     *                         {@link AutomaticObjectQueueConsumer} will not close it on close.
      */
     public AutomaticObjectQueueConsumer(ObjectQueueConsumer<E> consumer,
                                         ConsumeObjectHandler<E> handler,
@@ -150,8 +151,9 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
      *
      * @param consumer         the delegated consumer
      * @param handler          the handler for the consumed object from the delegated consumer
-     * @param listenerExecutor the executor used to call listeners, please close it after
-     *                         this consumer is closed
+     * @param listenerExecutor the executor used to call listeners, please remember to close
+     *                         it after this consumer is closed. The created
+     *                         {@link AutomaticObjectQueueConsumer} will not close it on close.
      * @param listeners        a list of {@link ConsumeObjectListener}s for this consumer
      */
     public AutomaticObjectQueueConsumer(ObjectQueueConsumer<E> consumer,
