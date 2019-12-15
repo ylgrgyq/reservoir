@@ -130,12 +130,13 @@ public class FileRecords extends AbstractRecords implements Closeable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final FileRecords that = (FileRecords) o;
+        // we do not compare channel field because if file, start, end, isSlice is equal,
+        // we can sure that the two FileRecords will produce the same Records so they are logically equivalent
         return size == that.size &&
                 start == that.start &&
                 end == that.end &&
                 isSlice == that.isSlice &&
-                file.equals(that.file) &&
-                channel.equals(that.channel);
+                file.equals(that.file);
     }
 
     @Override
