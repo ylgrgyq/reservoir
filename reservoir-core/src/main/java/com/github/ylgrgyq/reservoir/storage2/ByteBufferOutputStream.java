@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  * So, it's best to assume that buffer expansion can always happen. An improvement would be to create a separate class
  * that throws an error if buffer expansion is required to avoid the issue altogether.
  */
-public class ByteBufferOutputStream extends OutputStream {
+public final class ByteBufferOutputStream extends OutputStream {
 
     private static final float REALLOCATION_FACTOR = 1.1f;
 

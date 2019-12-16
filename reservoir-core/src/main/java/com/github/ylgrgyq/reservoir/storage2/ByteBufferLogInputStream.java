@@ -9,7 +9,7 @@ import static com.github.ylgrgyq.reservoir.storage2.RecordsHeaderConstants.*;
  * A byte buffer backed log input stream. This class avoids the need to copy records by returning
  * slices from the underlying byte buffer.
  */
-class ByteBufferLogInputStream implements LogInputStream<DefaultRecordBatch> {
+final class ByteBufferLogInputStream implements LogInputStream<DefaultRecordBatch> {
     private final ByteBuffer buffer;
     private final int maxMessageSize;
 

@@ -14,7 +14,7 @@ import static com.github.ylgrgyq.reservoir.storage2.RecordsHeaderConstants.*;
 /**
  * A log input stream which is backed by a {@link FileChannel}.
  */
-public class FileLogInputStream implements LogInputStream<RecordBatchWithPosition> {
+public final class FileLogInputStream implements LogInputStream<RecordBatchWithPosition> {
     private static void readFully(FileChannel channel, ByteBuffer destinationBuffer, long position) throws IOException {
         if (position < 0) {
             throw new IllegalArgumentException("The file channel position cannot be negative, but it is " + position);

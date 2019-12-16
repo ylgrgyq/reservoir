@@ -20,7 +20,7 @@ import java.util.Objects;
  * But the {@code totalRecordSize} field in {@link DefaultRecord} is the total
  * size of the Record in bytes, which is equals to Length + bytes of Length in Varint.
  */
-class DefaultRecord implements Record {
+final class DefaultRecord implements Record {
     // We don't have any attributes now, so use a constant attributes
     final static byte DEFAULT_ATTRIBUTES = 0;
 

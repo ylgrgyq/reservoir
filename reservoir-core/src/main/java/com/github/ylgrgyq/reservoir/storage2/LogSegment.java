@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
-public class LogSegment implements Closeable {
+public final class LogSegment implements Closeable {
     /**
      * Recover a {@code LogSegment} from the target path.
      *

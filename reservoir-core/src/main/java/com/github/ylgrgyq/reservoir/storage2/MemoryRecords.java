@@ -9,7 +9,7 @@ import java.util.List;
 
 import static com.github.ylgrgyq.reservoir.storage2.DefaultRecordBatch.DEFAULT_RECORD_BATCH_HEADER_OVERHEAD;
 
-public class MemoryRecords extends AbstractRecords {
+public final class MemoryRecords extends AbstractRecords {
     private final long baseId;
     private final Iterable<DefaultRecordBatch> batches = this::batchIterator;
     private final ByteBuffer buffer;

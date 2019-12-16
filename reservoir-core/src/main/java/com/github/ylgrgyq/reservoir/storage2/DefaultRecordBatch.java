@@ -24,7 +24,7 @@ import static com.github.ylgrgyq.reservoir.storage2.RecordsHeaderConstants.*;
  * size of the DefaultRecordBatch in bytes, which includes the RecordBatch header and all the Record
  * contained in this batch.
  */
-class DefaultRecordBatch implements RecordBatch {
+final class DefaultRecordBatch implements RecordBatch {
     static final int CRC_OFFSET = HEADER_SIZE_UP_TO_MAGIC;
     static final int CRC_LENGTH = 4;
     static final int ATTRIBUTES_OFFSET = CRC_OFFSET + CRC_LENGTH;

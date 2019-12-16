@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,18 +21,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import static com.github.ylgrgyq.reservoir.FileUtils.lockDirectory;
-import static com.github.ylgrgyq.reservoir.FileUtils.releaseDirectoryLock;
 import static java.util.Objects.requireNonNull;
 
-public class FileStorage2 implements ObjectQueueStorage<byte[]> {
+public final class FileStorage2 implements ObjectQueueStorage<byte[]> {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage2.class.getName());
     // Todo: remove this constant segment size
     private static final int DEFAULT_SEGMENT_SIZE = 1024;
 
-    private Path baseDirPath;
     private long lastCommittedId;
-    private FileLock storageLock;
+    private StorageLock storageLock;
     private final Lock lock;
     private final Condition storageNotEmpty;
 
@@ -48,15 +44,15 @@ public class FileStorage2 implements ObjectQueueStorage<byte[]> {
             throw new IllegalArgumentException("\"" + storageBaseDir + "\" must be a directory");
         }
 
-        this.baseDirPath = baseDirPath;
         this.lock = new ReentrantLock();
         this.storageNotEmpty = lock.newCondition();
         this.lastCommittedId = -1;
+        this.storageLock = new StorageLock(baseDirPath);
         boolean initStorageSuccess = false;
         try {
             Files.createDirectories(baseDirPath);
 
-            this.storageLock = lockDirectory(baseDirPath, FileName.getLockFileName());
+            this.storageLock.lock();
 
             logger.debug("Start init storage under {}", storageBaseDir);
 
@@ -68,7 +64,7 @@ public class FileStorage2 implements ObjectQueueStorage<byte[]> {
         } finally {
             if (!initStorageSuccess) {
                 try {
-                    releaseDirectoryLock(storageLock);
+                    this.storageLock.unlock();
                 } catch (IOException ex) {
                     throw new StorageException(ex);
                 }
@@ -175,7 +171,7 @@ public class FileStorage2 implements ObjectQueueStorage<byte[]> {
 
     @Override
     public void close() throws Exception {
-
+        this.storageLock.unlock();
     }
 
     boolean closed() {

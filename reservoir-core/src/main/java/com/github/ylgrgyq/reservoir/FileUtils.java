@@ -1,15 +1,9 @@
 package com.github.ylgrgyq.reservoir;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.Channel;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 /**
  * Copied from Apache commons-io v2.6.
@@ -172,33 +166,5 @@ public final class FileUtils {
             throw new IOException("Failed to list contents of " + directory);
         }
         return files;
-    }
-
-    public static FileLock lockDirectory(Path baseDir, String lockFileName) throws IOException {
-        final Path lockFilePath = baseDir.resolve(lockFileName);
-        final FileChannel lockChannel = FileChannel.open(lockFilePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        FileLock fileLock = null;
-        try {
-            fileLock = lockChannel.tryLock();
-            if (fileLock == null) {
-                throw new IllegalStateException("failed to lock directory: " + baseDir);
-            }
-        } finally {
-            if (fileLock == null || !fileLock.isValid()) {
-                lockChannel.close();
-            }
-        }
-
-        return fileLock;
-    }
-
-    public static void releaseDirectoryLock(@Nullable FileLock lock) throws IOException {
-        if (lock != null) {
-            try (Channel channel = lock.acquiredBy()) {
-                if (channel.isOpen()) {
-                    lock.release();
-                }
-            }
-        }
     }
 }

@@ -17,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.github.ylgrgyq.reservoir.storage2.StorageTestingUtils.generateTestingBytes;
+import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -85,7 +86,7 @@ public class LogTest {
         final int batchSize = 100;
         final List<ByteBuffer> data = prepareDataInLog(batchCount, batchSize);
         final long emptySegmentStartId = batchCount * batchSize;
-        final Path emptySegmentPath = testingDirPath.resolve(logName).resolve(FileName.getLogSegmentFileName(emptySegmentStartId));
+        final Path emptySegmentPath = testingDirPath.resolve(logName).resolve(SegmentFile.fileName(emptySegmentStartId));
         LogSegment.newSegment(emptySegmentPath, emptySegmentStartId);
 
         assertThat(emptySegmentPath.toFile().exists()).isTrue();
@@ -115,7 +116,7 @@ public class LogTest {
         prepareDataInLog(10, 100);
         final List<File> segmentFiles = getOrderedSegmentFiles();
         long startId = parseStartIdFromFileName(segmentFiles.get(segmentFiles.size() / 2).getName());
-        int purgedCount = testingLog.purgeOutdatedSegments(segment -> segment.startId() <= startId);
+        int purgedCount = testingLog.purgeSegments(segment -> segment.startId() <= startId);
         assertThat(purgedCount).isPositive();
 
         final List<File> segmentFilesAfterPurge = getOrderedSegmentFiles();
@@ -131,7 +132,7 @@ public class LogTest {
     public void testSkipPurgeWhenOnlyOneSegmentRemain() throws Exception {
         prepareDataInLog(10, 100);
         final List<File> segmentFiles = getOrderedSegmentFiles();
-        int purgedCount = testingLog.purgeOutdatedSegments(segment -> true);
+        int purgedCount = testingLog.purgeSegments(segment -> true);
         assertThat(purgedCount).isEqualTo(segmentFiles.size() - 1);
 
         final List<File> segmentFilesAfterPurge = getOrderedSegmentFiles();
@@ -171,21 +172,11 @@ public class LogTest {
         assert files != null;
         return Arrays.stream(files)
                 .filter(f -> FileType.Segment.match(f.getName()))
-                .sorted((o1, o2) -> {
-                    final long startId1 = parseStartIdFromFileName(o1.getName());
-                    final long startId2 = parseStartIdFromFileName(o2.getName());
-                    // start id increasing order
-                    return Long.compare(startId1, startId2);
-                })
+                .sorted(comparing(f -> SegmentFile.fromPath(f.getName())))
                 .collect(Collectors.toList());
     }
 
     private long parseStartIdFromFileName(String fileName) {
-        assert FileType.Segment.suffix() != null;
-        final String startIdStr = fileName.substring(
-                // add one for the dash char between prefix and start id in segment file name
-                FileType.Segment.prefix().length() + 1,
-                fileName.length() - FileType.Segment.suffix().length());
-        return Long.valueOf(startIdStr);
+        return SegmentFile.fromPath(fileName).startId();
     }
 }

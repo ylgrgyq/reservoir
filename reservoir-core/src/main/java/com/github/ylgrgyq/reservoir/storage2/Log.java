@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class Log implements Closeable {
+public final class Log implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(Log.class.getSimpleName());
 
     private final String logName;
@@ -44,6 +44,12 @@ public class Log implements Closeable {
         }
     }
 
+    /**
+     * Append the input group of {@link ByteBuffer}s into this Log.
+     *
+     * @param batch the input group of {@link ByteBuffer}s
+     * @throws IOException if any I/O error occur
+     */
     public void append(List<ByteBuffer> batch) throws IOException {
         LogSegment segment = currentSegment;
         if (segment == null || segment.size() >= segmentSize) {
@@ -54,14 +60,26 @@ public class Log implements Closeable {
         segment.append(batch);
     }
 
+    /**
+     * Get the last id of this Log, inclusive;
+     *
+     * @return the last id of this segment
+     */
     public long lastId() {
         return segments.lastEntry().getValue().lastId();
     }
 
     /**
-     * @param fromId inclusive
-     * @return
-     * @throws IOException
+     * Get a {@link FileRecords} slice contains a record with id equals to {@code fromId} from this Log.
+     * If the {@code fromId} is not in this Log, {@code null} will be returned.
+     * <p>
+     * Note that if {@code fromId} exits in this Log, this method only insure that the returned
+     * {@link FileRecords} contains the record with {@code fromId} but it may not be the first record
+     * in this {@link FileRecords}.
+     *
+     * @param fromId the inclusive start id of the returned {@link FileRecords}
+     * @return a {@link FileRecords} slice contains a record with the id equals to {@code fromId}
+     * @throws IOException if any I/O error occur
      */
     @Nullable
     public FileRecords read(long fromId) throws IOException {
@@ -78,7 +96,13 @@ public class Log implements Closeable {
         return null;
     }
 
-    int purgeOutdatedSegments(Predicate<LogSegment> needPurge) {
+    /**
+     * Purge all the segments in this Log which can pass the test of the input {@link Predicate}.
+     *
+     * @param needPurge a {@link Predicate} to filter out segments to purge
+     * @return how many segments was purged
+     */
+    int purgeSegments(Predicate<LogSegment> needPurge) {
         int purged = 0;
         for (Iterator<Entry<Long, LogSegment>> itr = segments.entrySet().iterator(); itr.hasNext(); ) {
             final Entry<Long, LogSegment> entry = itr.next();
@@ -109,6 +133,11 @@ public class Log implements Closeable {
         }
     }
 
+    /**
+     * Get how many segments are there in this Log
+     *
+     * @return the segments count in this Log
+     */
     int size() {
         return segments.size();
     }
@@ -148,7 +177,7 @@ public class Log implements Closeable {
     }
 
     private LogSegment addNewSegment(long startId) throws IOException {
-        final String segmentName = FileName.getLogSegmentFileName(startId);
+        final String segmentName = SegmentFile.fileName(startId);
         return addSegment(LogSegment.newSegment(logDirPath.resolve(segmentName), startId));
     }
 

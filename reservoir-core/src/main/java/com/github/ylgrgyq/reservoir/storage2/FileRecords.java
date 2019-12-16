@@ -10,14 +10,13 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-public class FileRecords extends AbstractRecords implements Closeable {
+public final class FileRecords extends AbstractRecords implements Closeable {
     public static FileRecords open(File file) throws IOException {
         final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ);
         return new FileRecords(file, channel, 0, Integer.MAX_VALUE, false);
     }
 
     private int size;
-    // Todo: this field seems no use
     private final File file;
     private final FileChannel channel;
     private final int start;
