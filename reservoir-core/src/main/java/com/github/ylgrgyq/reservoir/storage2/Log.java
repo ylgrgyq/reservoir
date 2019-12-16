@@ -78,7 +78,8 @@ public class Log implements Closeable {
         return null;
     }
 
-    public void purgeOutdatedSegments(Predicate<LogSegment> needPurge) {
+    int purgeOutdatedSegments(Predicate<LogSegment> needPurge) {
+        int purged = 0;
         for (Iterator<Entry<Long, LogSegment>> itr = segments.entrySet().iterator(); itr.hasNext(); ) {
             final Entry<Long, LogSegment> entry = itr.next();
             final LogSegment segment = entry.getValue();
@@ -87,15 +88,18 @@ public class Log implements Closeable {
                     itr.remove();
                     try {
                         segment.close();
+                        Files.delete(segment.segmentFilePath());
                     } catch (IOException ex) {
                         logger.warn("Close segment {} failed.", segment, ex);
                     }
+                    ++purged;
                 }
             } else {
                 // if this is the last segment, we do not purge it
                 break;
             }
         }
+        return purged;
     }
 
     @Override
@@ -115,7 +119,7 @@ public class Log implements Closeable {
         if (files != null) {
             final List<Path> segmentPaths = Arrays.stream(files)
                     .filter(File::isFile)
-                    .filter(f -> FileType.parseFileType(f.getName()) == FileType.Segment)
+                    .filter(f -> FileType.Segment.match(f.getName()))
                     .map(File::toPath)
                     .collect(Collectors.toList());
 
@@ -135,8 +139,8 @@ public class Log implements Closeable {
                 if (lastId < 0 || lastId + 1 == segment.startId()) {
                     lastId = segment.lastId();
                 } else {
-                    throw new InvalidSegmentException("non-consecutive segments found under " + logName + ". " +
-                            "Last id in the last segment is: " + lastId + ", but the next segment is start at: "
+                    throw new InvalidSegmentException("non-consecutive segments found under log: " + logName + ". " +
+                            "Last id in a segment is: " + lastId + ", but the start id of the next segment is: "
                             + segment.startId());
                 }
             }

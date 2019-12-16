@@ -194,6 +194,10 @@ public class LogSegment implements Closeable {
                 '}';
     }
 
+    Path segmentFilePath() {
+        return segmentPath;
+    }
+
     FileRecords fileRecords() {
         return fileRecords;
     }

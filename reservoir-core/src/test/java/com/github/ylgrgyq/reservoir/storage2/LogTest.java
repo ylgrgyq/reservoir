@@ -10,15 +10,15 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.github.ylgrgyq.reservoir.storage2.StorageTestingUtils.generateTestingBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class LogTest {
     private static final String logName = "TestingLogName";
@@ -42,37 +42,13 @@ public class LogTest {
     @Test
     public void testBasicReadAndWrite() throws Exception {
         final List<ByteBuffer> data = prepareDataInLog(1, 10);
-        for (long i = 0; i < data.size(); i++) {
-            final FileRecords records = testingLog.read(i);
-            assert records != null;
-
-            int index = (int) i;
-            for (Record record : records.records()) {
-                if (record.id() >= i) {
-                    assertThat(record.id()).isEqualTo(index);
-                    assertThat(record.value()).isEqualTo(data.get(index));
-                    index++;
-                }
-            }
-        }
+        testReadLog(data, testingLog);
     }
 
     @Test
     public void testReadAndWriteWithMultiSegments() throws IOException {
         final List<ByteBuffer> data = prepareDataInLog(10, 100);
-        for (long i = 0; i < data.size(); i++) {
-            final FileRecords records = testingLog.read(i);
-            assert records != null;
-
-            int index = (int) i;
-            for (Record record : records.records()) {
-                if (record.id() >= i) {
-                    assertThat(record.id()).isEqualTo(index);
-                    assertThat(record.value()).isEqualTo(data.get(index));
-                    index++;
-                }
-            }
-        }
+        testReadLog(data, testingLog);
         assertThat(testingLog.size()).isGreaterThan(1);
     }
 
@@ -99,54 +75,68 @@ public class LogTest {
     public void testRecovery() throws Exception {
         final List<ByteBuffer> data = prepareDataInLog(10, 100);
         final Log recoveredLog = new Log(testingDirPath, logName, maxSegmentSize);
-        for (long i = 0; i < data.size(); i++) {
-            final FileRecords records = recoveredLog.read(i);
-            assert records != null;
-
-            int index = (int) i;
-            for (Record record : records.records()) {
-                if (record.id() >= i) {
-                    assertThat(record.id()).isEqualTo(index);
-                    assertThat(record.value()).isEqualTo(data.get(index));
-                    index++;
-                }
-            }
-        }
+        testReadLog(data, recoveredLog);
         assertThat(recoveredLog.size()).isEqualTo(testingLog.size());
     }
 
     @Test
     public void testRecoverEmptySegment() throws Exception {
-        final List<ByteBuffer> data = prepareDataInLog(10, 100);
-        final File[] files = testingDirPath.toFile().listFiles();
-        assert files != null;
-//        final Optional<Path> segmentPaths = Arrays.stream(files)
-//                .filter(File::isFile)
-//                .filter(f -> FileType.parseFileType(f.getName()) == FileType.Segment)
-//                .sorted((o1, o2) -> {
-//                    o1.
-//                    final BasicFileAttributes attr = Files.readAttributes(o1.toPath(), BasicFileAttributes.class);
-//                    createT = attr.creationTime().toInstant();
-//                    return -1;
-//                }).map(File::toPath).findFirst();
+        final int batchCount = 10;
+        final int batchSize = 100;
+        final List<ByteBuffer> data = prepareDataInLog(batchCount, batchSize);
+        final long emptySegmentStartId = batchCount * batchSize;
+        final Path emptySegmentPath = testingDirPath.resolve(logName).resolve(FileName.getLogSegmentFileName(emptySegmentStartId));
+        LogSegment.newSegment(emptySegmentPath, emptySegmentStartId);
 
+        assertThat(emptySegmentPath.toFile().exists()).isTrue();
 
         final Log recoveredLog = new Log(testingDirPath, logName, maxSegmentSize);
+        testReadLog(data, recoveredLog);
+        assertThat(recoveredLog.size()).isEqualTo(testingLog.size());
+        assertThat(emptySegmentPath.toFile().exists()).isFalse();
     }
 
     @Test
-    public void testRecoverNonConsecutiveSegments() {
+    public void testRecoverNonConsecutiveSegments() throws Exception {
+        prepareDataInLog(10, 100);
+        final List<File> segmentFiles = getOrderedSegmentFiles();
 
+        // remove one of the segments lies in the middle of all segments to trigger the exception
+        final int removeIndex = ThreadLocalRandom.current().nextInt(1, segmentFiles.size() - 1);
+        Files.delete(segmentFiles.get(removeIndex).toPath());
+
+        assertThatThrownBy(() -> new Log(testingDirPath, logName, maxSegmentSize))
+                .hasMessageContaining("non-consecutive segments found under log: " + logName)
+                .isInstanceOf(InvalidSegmentException.class);
     }
 
     @Test
-    public void testPurgeSegments() {
+    public void testPurgeSegments() throws Exception {
+        prepareDataInLog(10, 100);
+        final List<File> segmentFiles = getOrderedSegmentFiles();
+        long startId = parseStartIdFromFileName(segmentFiles.get(segmentFiles.size() / 2).getName());
+        int purgedCount = testingLog.purgeOutdatedSegments(segment -> segment.startId() <= startId);
+        assertThat(purgedCount).isPositive();
 
+        final List<File> segmentFilesAfterPurge = getOrderedSegmentFiles();
+        assertThat(segmentFilesAfterPurge.size()).isEqualTo(segmentFiles.size() - purgedCount);
+        assertThat(segmentFilesAfterPurge
+                .stream()
+                .filter(f -> parseStartIdFromFileName(f.getName()) <= startId)
+                .findAny())
+                .isEmpty();
     }
 
     @Test
-    public void testSkipPurgeWhenOnlyOneSegmentRemain() {
+    public void testSkipPurgeWhenOnlyOneSegmentRemain() throws Exception {
+        prepareDataInLog(10, 100);
+        final List<File> segmentFiles = getOrderedSegmentFiles();
+        int purgedCount = testingLog.purgeOutdatedSegments(segment -> true);
+        assertThat(purgedCount).isEqualTo(segmentFiles.size() - 1);
 
+        final List<File> segmentFilesAfterPurge = getOrderedSegmentFiles();
+        assertThat(segmentFilesAfterPurge.size()).isEqualTo(1);
+        assertThat(segmentFilesAfterPurge).isEqualTo(segmentFiles.subList(segmentFiles.size() - 1, segmentFiles.size()));
     }
 
     private List<ByteBuffer> prepareDataInLog(int batchCount, int batchSize) throws IOException {
@@ -158,5 +148,44 @@ public class LogTest {
         }
         assertThat(testingLog.lastId()).isEqualTo(batchCount * batchSize - 1);
         return ret;
+    }
+
+    private void testReadLog(List<ByteBuffer> data, Log testingLog) throws IOException {
+        for (long i = 0; i < data.size(); i++) {
+            final FileRecords records = testingLog.read(i);
+            assert records != null;
+
+            int index = (int) i;
+            for (Record record : records.records()) {
+                if (record.id() >= i) {
+                    assertThat(record.id()).isEqualTo(index);
+                    assertThat(record.value()).isEqualTo(data.get(index));
+                    index++;
+                }
+            }
+        }
+    }
+
+    private List<File> getOrderedSegmentFiles() {
+        final File[] files = testingDirPath.resolve(logName).toFile().listFiles();
+        assert files != null;
+        return Arrays.stream(files)
+                .filter(f -> FileType.Segment.match(f.getName()))
+                .sorted((o1, o2) -> {
+                    final long startId1 = parseStartIdFromFileName(o1.getName());
+                    final long startId2 = parseStartIdFromFileName(o2.getName());
+                    // start id increasing order
+                    return Long.compare(startId1, startId2);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private long parseStartIdFromFileName(String fileName) {
+        assert FileType.Segment.suffix() != null;
+        final String startIdStr = fileName.substring(
+                // add one for the dash char between prefix and start id in segment file name
+                FileType.Segment.prefix().length() + 1,
+                fileName.length() - FileType.Segment.suffix().length());
+        return Long.valueOf(startIdStr);
     }
 }
