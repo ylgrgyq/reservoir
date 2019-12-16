@@ -196,11 +196,13 @@ public class FileStorage2 implements ObjectQueueStorage<byte[]> {
             if (records != null) {
                 final List<SerializedObjectWithId<byte[]>> entries = new ArrayList<>(limit);
                 for (Record record : records.records()) {
-                    final byte[] val = new byte[record.valueSize()];
-                    record.value().get(val);
-                    entries.add(new SerializedObjectWithId<>(record.id(), val));
-                    if (entries.size() == limit) {
-                        break;
+                    if (record.id() > fromId) {
+                        final byte[] val = new byte[record.valueSize()];
+                        record.value().get(val);
+                        entries.add(new SerializedObjectWithId<>(record.id(), val));
+                        if (entries.size() == limit) {
+                            break;
+                        }
                     }
                 }
                 return entries;

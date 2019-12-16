@@ -7,7 +7,7 @@ final class FileName {
         return LOCK_FILE_PREFIX;
     }
 
-    static String getLogSegmentFileName(String logName, long startId) {
-        return logName + "-" + startId;
+    static String getLogSegmentFileName(long startId) {
+        return FileType.Segment.prefix() + "-" + startId;
     }
 }

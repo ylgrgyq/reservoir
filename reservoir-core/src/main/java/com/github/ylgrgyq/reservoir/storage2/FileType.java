@@ -19,4 +19,8 @@ enum FileType {
     FileType(String prefix) {
         this.prefix = prefix;
     }
+
+    public String prefix() {
+        return prefix;
+    }
 }

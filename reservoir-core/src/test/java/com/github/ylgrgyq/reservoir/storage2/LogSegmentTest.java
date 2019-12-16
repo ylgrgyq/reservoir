@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.github.ylgrgyq.reservoir.storage2.RecordsHeaderConstants.MAGIC_OFFSET;
 import static com.github.ylgrgyq.reservoir.storage2.StorageTestingUtils.generateTestingBytes;
@@ -65,7 +66,27 @@ public class LogSegmentTest {
         final List<ByteBuffer> data = generateTestingBytes(10);
         segment.append(data);
 
-        final FileRecords records = segment.records(testingStartId);
+        for (long i = testingStartId; i <= segment.lastId(); i++) {
+            final FileRecords records = segment.records(i);
+            assert records != null;
+
+            int index = (int) (i - testingStartId);
+            for (Record record : records.records()) {
+                if (record.id() >= i) {
+                    assertThat(record.id()).isEqualTo(testingStartId + index);
+                    assertThat(record.value()).isEqualTo(data.get(index));
+                    index++;
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testReadFromIdSmallerThanLastId() throws Exception {
+        final List<ByteBuffer> data = generateTestingBytes(10);
+        segment.append(data);
+
+        final FileRecords records = segment.records(ThreadLocalRandom.current().nextLong(Long.MIN_VALUE, segment.startId()));
         assert records != null;
 
         int index = 0;
@@ -74,6 +95,14 @@ public class LogSegmentTest {
             assertThat(record.value()).isEqualTo(data.get(index));
             index++;
         }
+    }
+
+    @Test
+    public void testReadFromIdGreaterThanLastId() throws Exception {
+        final List<ByteBuffer> data = generateTestingBytes(10);
+        segment.append(data);
+
+        assertThat(segment.records(segment.lastId() + 1)).isNull();
     }
 
     @Test

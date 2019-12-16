@@ -35,7 +35,7 @@ public class LogSegment implements Closeable {
             fileRecords = FileRecords.open(segmentPath.toFile());
 
             for (RecordBatchWithPosition batch : fileRecords.batches()) {
-                assert batch.baseId() > 0;
+                assert batch.baseId() >= 0;
                 if (startId == -1) {
                     startId = batch.baseId();
                 }
@@ -142,8 +142,12 @@ public class LogSegment implements Closeable {
     }
 
     /**
-     * Get a {@link FileRecords} slice starting at {@code fromId} of this segment. If the {@code fromId} is
-     * not in this segment, {@code null} will be returned.
+     * Get a {@link FileRecords} slice contains a record with id equals to {@code fromId} from this segment.
+     * If the {@code fromId} is not in this segment, {@code null} will be returned.
+     * <p>
+     * Note that if {@code fromId} exits in this segment, this method only insure that the returned
+     * {@link FileRecords} contains the record with {@code fromId} but it may not be the first record
+     * in this {@link FileRecords}.
      *
      * @param fromId the inclusive start id of the returned {@link FileRecords}
      * @return a {@link FileRecords} slice contains a record with the id equals to {@code fromId}

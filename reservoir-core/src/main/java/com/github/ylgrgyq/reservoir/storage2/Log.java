@@ -11,8 +11,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -104,20 +105,23 @@ public class Log implements Closeable {
         }
     }
 
+    int size() {
+        return segments.size();
+    }
+
     private void recoverSegments() throws IOException {
         final File logBaseDirFile = logDirPath.toFile();
         final File[] files = logBaseDirFile.listFiles();
         if (files != null) {
-            final List<String> consumerLogFileMetas = Arrays.stream(files)
+            final List<Path> segmentPaths = Arrays.stream(files)
                     .filter(File::isFile)
-                    .map(File::getName)
-                    .filter(name -> FileType.parseFileType(name) == FileType.Segment)
+                    .filter(f -> FileType.parseFileType(f.getName()) == FileType.Segment)
+                    .map(File::toPath)
                     .collect(Collectors.toList());
 
-            for (String name : consumerLogFileMetas) {
-                Path segmentPath = Paths.get(name);
+            for (Path segmentPath : segmentPaths) {
                 try {
-                    final LogSegment segment = LogSegment.fromFilePath(Paths.get(name));
+                    final LogSegment segment = LogSegment.fromFilePath(segmentPath);
                     addSegment(segment);
                 } catch (EmptySegmentException ex) {
                     logger.info("Found empty log segment at path: " + segmentPath + ". This may caused by an unfinished" +
@@ -140,7 +144,7 @@ public class Log implements Closeable {
     }
 
     private LogSegment addNewSegment(long startId) throws IOException {
-        final String segmentName = FileName.getLogSegmentFileName(logName, startId);
+        final String segmentName = FileName.getLogSegmentFileName(startId);
         return addSegment(LogSegment.newSegment(logDirPath.resolve(segmentName), startId));
     }
 
