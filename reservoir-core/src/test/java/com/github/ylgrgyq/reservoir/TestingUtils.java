@@ -1,5 +1,6 @@
 package com.github.ylgrgyq.reservoir;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
@@ -10,6 +11,10 @@ public class TestingUtils {
 
     public static byte[] numberStringBytes(Number num) {
         return ("" + num).getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static ByteBuffer numberStringByteBuffer(Number num) {
+        return ByteBuffer.wrap(("" + num).getBytes(StandardCharsets.UTF_8));
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
