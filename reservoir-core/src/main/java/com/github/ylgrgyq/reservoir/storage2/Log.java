@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -61,12 +62,16 @@ public final class Log implements Closeable {
     }
 
     /**
-     * Get the last id of this Log, inclusive;
+     * Get the last id of this Log, inclusive; If the Log is empty, returns -1 instead.
      *
      * @return the last id of this segment
      */
     public long lastId() {
-        return segments.lastEntry().getValue().lastId();
+        final Map.Entry<Long, LogSegment> entry = segments.lastEntry();
+        if (entry != null) {
+            return entry.getValue().lastId();
+        }
+        return -1;
     }
 
     /**

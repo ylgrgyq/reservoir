@@ -25,6 +25,9 @@ import static java.util.Objects.requireNonNull;
 
 public final class FileStorage2 implements ObjectQueueStorage<byte[]> {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage2.class.getName());
+    private static final String dataLogName = "DataLog";
+    private static final String commitIdLogName = "CommitIdLog";
+
     // Todo: remove this constant segment size
     private static final int DEFAULT_SEGMENT_SIZE = 1024;
 
@@ -33,6 +36,7 @@ public final class FileStorage2 implements ObjectQueueStorage<byte[]> {
     private final Lock lock;
     private final Condition storageNotEmpty;
 
+    private boolean closed;
     private Log dataLog;
     private Log commitIdLog;
 
@@ -56,8 +60,9 @@ public final class FileStorage2 implements ObjectQueueStorage<byte[]> {
 
             logger.debug("Start init storage under {}", storageBaseDir);
 
-            this.dataLog = new Log(baseDirPath, "DataLog", DEFAULT_SEGMENT_SIZE);
-            this.commitIdLog = new Log(baseDirPath, "CommitIdLog", DEFAULT_SEGMENT_SIZE);
+            this.dataLog = new Log(baseDirPath, dataLogName, DEFAULT_SEGMENT_SIZE);
+            this.commitIdLog = new Log(baseDirPath, commitIdLogName, DEFAULT_SEGMENT_SIZE);
+            this.lastCommittedId = lastCommittedIdFromCommitIdLog();
             initStorageSuccess = true;
         } catch (IOException | OverlappingFileLockException ex) {
             throw new StorageException("init storage under: " + storageBaseDir + " failed", ex);
@@ -101,7 +106,8 @@ public final class FileStorage2 implements ObjectQueueStorage<byte[]> {
         try {
             if (id > lastCommittedId) {
                 final ByteBuffer idBuffer = ByteBuffer.allocate(ByteUtils.sizeOfVarlong(id));
-                ByteUtils.writeVarlong(id, ByteBuffer.allocate(ByteUtils.sizeOfVarlong(id)));
+                ByteUtils.writeVarlong(id, idBuffer);
+                idBuffer.flip();
                 commitIdLog.append(Collections.singletonList(idBuffer));
                 lastCommittedId = id;
             }
@@ -171,11 +177,41 @@ public final class FileStorage2 implements ObjectQueueStorage<byte[]> {
 
     @Override
     public void close() throws Exception {
-        this.storageLock.unlock();
+        lock.lockInterruptibly();
+        try {
+            if (closed()) {
+                return;
+            }
+            closed = true;
+            storageNotEmpty.signal();
+            dataLog.close();
+            commitIdLog.close();
+            storageLock.unlock();
+        } finally {
+            lock.unlock();
+        }
     }
 
-    boolean closed() {
-        return false;
+    private long lastCommittedIdFromCommitIdLog() throws IOException {
+        FileRecords records = this.commitIdLog.read(this.commitIdLog.lastId());
+        if (records == null) {
+            return -1L;
+        }
+
+        Record lastRecord = null;
+        for (Record record : records.records()) {
+            lastRecord = record;
+        }
+
+        if (lastRecord == null) {
+            return -1L;
+        }
+
+        return ByteUtils.readVarlong(lastRecord.value());
+    }
+
+    private boolean closed() {
+        return closed;
     }
 
     private void ensureStorageOpen() {

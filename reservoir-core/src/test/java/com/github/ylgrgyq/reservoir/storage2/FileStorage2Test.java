@@ -46,6 +46,16 @@ public class FileStorage2Test {
     }
 
     @Test
+    public void consecutiveCommitThenGetCommitIdAfterRecoverUsingSameFile() throws Exception {
+        for (int i = 1; i < 100; i++) {
+            storage.commitId(i);
+            storage.close();
+            storage = new FileStorage2(tempBaseDir);
+            assertThat(storage.getLastCommittedId()).isEqualTo(i);
+        }
+    }
+
+    @Test
     public void blockFetch() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(2);
         // block fetch in another thread

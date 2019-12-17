@@ -73,6 +73,11 @@ public class LogTest {
     }
 
     @Test
+    public void getLastIdFromEmptyLog() {
+        assertThat(testingLog.lastId()).isEqualTo(-1);
+    }
+
+    @Test
     public void testRecovery() throws Exception {
         final List<ByteBuffer> data = prepareDataInLog(10, 100);
         final Log recoveredLog = new Log(testingDirPath, logName, maxSegmentSize);
