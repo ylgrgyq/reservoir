@@ -13,6 +13,10 @@
     <packaging>jar</packaging>
     <name>reservoir-core ${project.version}</name>
 
+    <properties>
+        <github.actor>${env.GITHUB_ACTOR}</github.actor>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -78,5 +82,12 @@
         </plugins>
     </build>
 
+    <distributionManagement>
+      <repository>
+        <id>github</id>
+        <name>GitHub OWNER Apache Maven Packages</name>
+        <url>https://maven.pkg.github.com/${github.actor}/reservoir</url>
+      </repository>
+    </distributionManagement>
 
 </project>
