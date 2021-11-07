@@ -261,7 +261,7 @@ public final class AutomaticObjectQueueConsumer<E extends Verifiable> implements
                     if (closed) {
                         break;
                     }
-                } catch (Exception ex) {
+                } catch (Throwable ex) {
                     logger.warn("Got unexpected exception on processing object in reservoir queue.", ex);
                 }
             }
