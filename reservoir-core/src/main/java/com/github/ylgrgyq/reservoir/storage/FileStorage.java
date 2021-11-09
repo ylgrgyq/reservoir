@@ -151,7 +151,7 @@ public final class FileStorage implements ObjectQueueStorage<byte[]> {
 
             this.lastTryTruncateTime = System.nanoTime();
             initStorageSuccess = true;
-        } catch (IOException | StorageException t) {
+        } catch (IOException t) {
             throw new IllegalStateException("init storage failed", t);
         } catch (Exception ex) {
             throw new StorageException(ex);
